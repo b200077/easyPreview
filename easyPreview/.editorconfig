@@ -1,0 +1,145 @@
+# 如果要從更高的目錄繼承 .editorconfig 設定，請移除以下行
+root = true
+
+# Visual Basic 檔案
+[*.vb]
+
+#### 核心 EditorConfig 選項 ####
+
+# 縮排和間距
+indent_size = 4
+indent_style = space
+tab_width = 4
+
+# 新行喜好設定
+end_of_line = crlf
+insert_final_newline = false
+
+#### .NET 程式碼動作 ####
+
+# 類型成員
+dotnet_hide_advanced_members = false
+dotnet_member_insertion_location = with_other_members_of_the_same_kind
+dotnet_property_generation_behavior = prefer_throwing_properties
+
+# 符號搜尋
+dotnet_search_reference_assemblies = true
+
+#### .NET 編碼慣例 ####
+
+# 組合管理 Using
+dotnet_separate_import_directive_groups = false
+dotnet_sort_system_directives_first = true
+file_header_template = unset
+
+# this. 和 Me. 喜好設定
+dotnet_style_qualification_for_event = false
+dotnet_style_qualification_for_field = false
+dotnet_style_qualification_for_method = false
+dotnet_style_qualification_for_property = false
+
+# 語言關鍵字與 BCL 類型喜好設定
+dotnet_style_predefined_type_for_locals_parameters_members = true
+dotnet_style_predefined_type_for_member_access = true
+
+# 括號喜好設定
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary
+dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity
+
+# 修飾元喜好設定
+dotnet_style_require_accessibility_modifiers = for_non_interface_members
+
+# 運算式層級喜好設定
+dotnet_prefer_system_hash_code = true
+dotnet_style_coalesce_expression = true
+dotnet_style_collection_initializer = true
+dotnet_style_explicit_tuple_names = true
+dotnet_style_namespace_match_folder = true
+dotnet_style_null_propagation = true
+dotnet_style_object_initializer = true
+dotnet_style_operator_placement_when_wrapping = beginning_of_line
+dotnet_style_prefer_auto_properties = true
+dotnet_style_prefer_collection_expression = when_types_loosely_match
+dotnet_style_prefer_compound_assignment = true
+dotnet_style_prefer_conditional_expression_over_assignment = true
+dotnet_style_prefer_conditional_expression_over_return = true
+dotnet_style_prefer_foreach_explicit_cast_in_source = when_strongly_typed
+dotnet_style_prefer_inferred_anonymous_type_member_names = true
+dotnet_style_prefer_inferred_tuple_names = true
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true
+dotnet_style_prefer_non_hidden_explicit_cast_in_source = true
+dotnet_style_prefer_simplified_boolean_expressions = true
+dotnet_style_prefer_simplified_interpolation = true
+
+# 欄位喜好設定
+dotnet_style_readonly_field = true
+
+# 參數喜好設定
+dotnet_code_quality_unused_parameters = all
+
+# 隱藏項目喜好設定
+dotnet_remove_unnecessary_suppression_exclusions = none
+
+# 新行喜好設定
+dotnet_style_allow_multiple_blank_lines_experimental = true
+dotnet_style_allow_statement_immediately_after_block_experimental = true
+
+#### VB 編碼慣例 ####
+
+# 修飾元喜好設定
+visual_basic_preferred_modifier_order = partial,default,private,protected,public,friend,notoverridable,overridable,mustoverride,overloads,overrides,mustinherit,notinheritable,static,shared,shadows,readonly,writeonly,dim,const,withevents,widening,narrowing,custom,async,iterator
+
+# 運算式層級喜好設定
+visual_basic_style_prefer_isnot_expression = true
+visual_basic_style_prefer_simplified_object_creation = true
+visual_basic_style_unused_value_assignment_preference = unused_local_variable
+visual_basic_style_unused_value_expression_statement_preference = unused_local_variable
+
+#### 命名樣式 ####
+
+# 命名規則
+
+dotnet_naming_rule.interface_should_be_以_i_開頭.severity = suggestion
+dotnet_naming_rule.interface_should_be_以_i_開頭.symbols = interface
+dotnet_naming_rule.interface_should_be_以_i_開頭.style = 以_i_開頭
+
+dotnet_naming_rule.型別_should_be_pascal_命名法的大小寫.severity = suggestion
+dotnet_naming_rule.型別_should_be_pascal_命名法的大小寫.symbols = 型別
+dotnet_naming_rule.型別_should_be_pascal_命名法的大小寫.style = pascal_命名法的大小寫
+
+dotnet_naming_rule.非欄位成員_should_be_pascal_命名法的大小寫.severity = suggestion
+dotnet_naming_rule.非欄位成員_should_be_pascal_命名法的大小寫.symbols = 非欄位成員
+dotnet_naming_rule.非欄位成員_should_be_pascal_命名法的大小寫.style = pascal_命名法的大小寫
+
+# 符號規格
+
+dotnet_naming_symbols.interface.applicable_kinds = interface
+dotnet_naming_symbols.interface.applicable_accessibilities = public, friend, private, protected, protected_friend, private_protected
+dotnet_naming_symbols.interface.required_modifiers = 
+
+dotnet_naming_symbols.型別.applicable_kinds = class, struct, interface, enum
+dotnet_naming_symbols.型別.applicable_accessibilities = public, friend, private, protected, protected_friend, private_protected
+dotnet_naming_symbols.型別.required_modifiers = 
+
+dotnet_naming_symbols.非欄位成員.applicable_kinds = property, event, method
+dotnet_naming_symbols.非欄位成員.applicable_accessibilities = public, friend, private, protected, protected_friend, private_protected
+dotnet_naming_symbols.非欄位成員.required_modifiers = 
+
+# 命名樣式
+
+dotnet_naming_style.pascal_命名法的大小寫.required_prefix = 
+dotnet_naming_style.pascal_命名法的大小寫.required_suffix = 
+dotnet_naming_style.pascal_命名法的大小寫.word_separator = 
+dotnet_naming_style.pascal_命名法的大小寫.capitalization = pascal_case
+
+dotnet_naming_style.以_i_開頭.required_prefix = I
+dotnet_naming_style.以_i_開頭.required_suffix = 
+dotnet_naming_style.以_i_開頭.word_separator = 
+dotnet_naming_style.以_i_開頭.capitalization = pascal_case
+
+# 將特定的 FxCop 規則設定為「錯誤」
+dotnet_diagnostic.CA1062.severity = error
+# 將特定的 FxCop 規則設定為「警告」
+dotnet_diagnostic.CA1303.severity = warning
