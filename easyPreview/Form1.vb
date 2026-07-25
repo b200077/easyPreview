@@ -1302,7 +1302,7 @@ Partial Class Form1
     Private dragSourceControl As Control = Nothing
     Private Sub Form1_Index_DragDrop(sender As ListBox, e As DragEventArgs) Handles fileCollection.DragDrop, subFileCollection.DragDrop
         Dim lb As ListBox = DirectCast(sender, ListBox) ' 接收拖曳的 ListBox
-        Form4.tarForm = lb                              ' 指定正確的目標
+        ' 指定正確的目標
         targetList = lb
         Form4.form4_load()
         ' 支援拖曳檔案

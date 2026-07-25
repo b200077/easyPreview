@@ -396,6 +396,7 @@ Partial Public Class Form1
     Dim output As StringBuilder = New StringBuilder()
     Public targetList As ListBox
     Dim isclosing As Boolean = False
+    Private recentAddedMenu As ToolStripMenuItem  ' 類別層級變數，存住這個子選單的參考
 
     ' ==========================================
     'Dim isopening As Boolean = False
@@ -407,7 +408,6 @@ Partial Public Class Form1
     ' 在類級別預編譯正則表達式
     Public Shared twitterRgx As New Regex("mobile\.|/photo/\d|\?t.*|\?s.*|\?fb.*|\?cn.*", RegexOptions.Compiled)
     Public Shared pixivRgx As New Regex("\#.*|\?.*|(?<=pixiv\.net)\/en(?=\/)", RegexOptions.Compiled)
-    'Public Shared pixivRgx As New Regex("\#.*|\?.*", RegexOptions.Compiled)
     Public Shared normalRgx As New Regex("\?.*", RegexOptions.Compiled)
     Public Shared DMMRgx As New Regex("\&.*", RegexOptions.Compiled)
     Public Shared dlsiteRgx As New Regex("(?:RJ|VJ|BJ)\d+", RegexOptions.Compiled)
@@ -495,10 +495,11 @@ Partial Public Class Form1
 
     Private Sub check_document()
         Directory.CreateDirectory(recordPath)
-        If Not File.Exists(recordPath & "downloadRecord.txt") Then File.Create(recordPath & "downloadRecord.txt")
-        If Not File.Exists(recordPath & "des_pathrecord.txt") Then File.Create(recordPath & "des_pathrecord.txt")
-        If Not File.Exists(recordPath & "ori_pathrecord.txt") Then File.Create(recordPath & "ori_pathrecord.txt")
-        If Not File.Exists(recordPath & "passward.txt") Then File.Create(recordPath & "passward.txt")
+        If Not File.Exists(recordPath & "downloadRecord.txt") Then File.Create(recordPath & "downloadRecord.txt").Close()
+        If Not File.Exists(recordPath & "des_pathrecord.txt") Then File.Create(recordPath & "des_pathrecord.txt").Close()
+        If Not File.Exists(recordPath & "ori_pathrecord.txt") Then File.Create(recordPath & "ori_pathrecord.txt").Close()
+        If Not File.Exists(recordPath & "passward.txt") Then File.Create(recordPath & "passward.txt").Close()
+        If Not File.Exists(recordPath & "add_record.txt") Then File.Create(recordPath & "add_record.txt").Close()
     End Sub
     ' 全局變量保存參數
     Dim commandargs As String = String.Empty
@@ -746,6 +747,10 @@ Partial Public Class Form1
         If Directory.Exists(commonUsed) Then
             rightHotKey = New ToolStripMenuItem("加入")
             ContextMenuStrip1.Items.Add(rightHotKey)
+            subHotKey = New ToolStripMenuItem("最近加入")
+            rightHotKey.DropDownItems.Add(subHotKey)
+            recentAddedMenu = subHotKey        ' 存住參考
+            refresh_recentAddedMenu()          ' 首次填充
             subHotKey = New ToolStripMenuItem("ASMR")
             rightHotKey.DropDownItems.Add(subHotKey)
             For Each recordDir As String In getAllDirectories($"{commonUsed}ASMR")
@@ -758,28 +763,29 @@ Partial Public Class Form1
             For Each record As String In getallfiles($"{commonUsed}ASMR", "")
                 add_subStripMenuItem(subHotKey, record, AddressOf add_to_record)
             Next
-            subHotKey = New ToolStripMenuItem("畫")
-            rightHotKey.DropDownItems.Add(subHotKey)
-            For Each record As String In getallfiles($"{commonUsed}畫", "")
-                add_subStripMenuItem(subHotKey, record, AddressOf add_to_record)
-            Next
+            'subHotKey = New ToolStripMenuItem("畫")
+            'rightHotKey.DropDownItems.Add(subHotKey)
+            'For Each record As String In getallfiles($"{commonUsed}畫", "")
+            '    add_subStripMenuItem(subHotKey, record, AddressOf add_to_record)
+            'Next
             subHotKey = New ToolStripMenuItem("網路整合")
             rightHotKey.DropDownItems.Add(subHotKey)
             For Each record As String In getallfiles($"{commonUsed}", "*.trf")
                 add_subStripMenuItem(subHotKey, record, AddressOf add_to_record)
             Next
-            subHotKey = New ToolStripMenuItem("個別網站")
-            rightHotKey.DropDownItems.Add(subHotKey)
-            For Each record As String In getallfiles($"{commonUsed}個別網站", "")
-                subHotKey2 = New ToolStripMenuItem(record)
-                AddHandler subHotKey2.Click, AddressOf add_to_record
-                subHotKey.DropDownItems.Add(subHotKey2)
-                Dim dir As String = Path.GetDirectoryName(record) & "\" & Path.GetFileNameWithoutExtension(record)
-                If Not Directory.Exists(dir) Then Continue For
-                For Each subrecord As String In getallfiles(dir, "")
-                    add_subStripMenuItem(subHotKey2, subrecord, AddressOf add_to_record)
-                Next
-            Next
+            'subHotKey = New ToolStripMenuItem("個別網站")
+            'rightHotKey.DropDownItems.Add(subHotKey)
+            'For Each record As String In getallfiles($"{commonUsed}個別網站", "")
+            '    subHotKey2 = New ToolStripMenuItem(record)
+            '    AddHandler subHotKey2.Click, AddressOf add_to_record
+            '    subHotKey.DropDownItems.Add(subHotKey2)
+            '    Dim dir As String = Path.GetDirectoryName(record) & "\" & Path.GetFileNameWithoutExtension(record)
+            '    If Not Directory.Exists(dir) Then Continue For
+            '    For Each subrecord As String In getallfiles(dir, "")
+            '        add_subStripMenuItem(subHotKey2, subrecord, AddressOf add_to_record)
+            '    Next
+            'Next
+
         End If
         add_ContextMenuStrip(ContextMenuStrip1, "從剪貼簿匯入", AddressOf AddItem_from_clipboard)
         add_ContextMenuStrip(ContextMenuStrip1, "從文字框輸入", AddressOf AddItem_from_textbox)
@@ -804,6 +810,17 @@ Partial Public Class Form1
         Next
         add_ContextMenuStrip(ContextMenuStrip3, "Open File Directory", AddressOf Open_Directory)
     End Sub
+    Private Sub refresh_recentAddedMenu()
+        If recentAddedMenu Is Nothing Then Return
+        recentAddedMenu.DropDownItems.Clear()
+        Dim add_record_path = recordPath & "add_record.txt"
+        If Not File.Exists(add_record_path) Then Return
+        For Each record As String In File.ReadAllLines(add_record_path, Encoding.UTF8)
+            If String.IsNullOrWhiteSpace(record) Then Continue For
+            add_subStripMenuItem(recentAddedMenu, record, AddressOf add_to_record)
+        Next
+    End Sub
+
     Private Sub handle_label_sender(sender As Object, e As EventArgs)
         Dim control As ListBox = GetSourceControl(Of ListBox)(sender)
         If control Is Nothing Then Return
@@ -869,6 +886,8 @@ Partial Public Class Form1
     Public Sub add_to_record(sender As Object, e As EventArgs)
         Dim btn_name As String = CType(sender, ToolStripMenuItem).Text
         Console.WriteLine(btn_name)
+        Add_Record(btn_name)
+        refresh_recentAddedMenu()
         Dim files As List(Of String) = FileCollection.SelectedItems.Cast(Of String).ToList
         If CheckBox5.Checked Then
             files = FileCollection.Items.Cast(Of String).ToList
@@ -2453,6 +2472,36 @@ Partial Public Class Form1
         isCodeChange = True
         target.Text = newItem
         isCodeChange = False
+    End Sub
+    Private Sub Add_Record(target As String)
+        Dim savePath As String = recordPath & "add_record.txt"
+        Dim saveItems As New List(Of String)
+        Console.WriteLine(target)
+        ' 如果新項目為空則返回
+        If String.IsNullOrEmpty(target) Then Return
+
+        ' 避免多次 I/O，僅讀取一次文件
+        If System.IO.File.Exists(savePath) Then
+            saveItems = System.IO.File.ReadAllLines(savePath, Encoding.UTF8).ToList()
+        End If
+
+        ' 如果已存在，則移動到列表頂部
+        If saveItems.Contains(target) Then
+            saveItems.Remove(target)
+        End If
+
+        ' 控制最大項目數量
+        Dim MaxItemCount = 30
+        If saveItems.Count >= MaxItemCount Then
+            saveItems.RemoveAt(saveItems.Count - 1) ' 移除最舊的項目（最後一個）
+        End If
+
+        ' 在列表開頭插入新項目
+        saveItems.Insert(0, target)
+        Console.WriteLine(saveItems(0))
+
+        ' 一次性寫入更新後的內容到文件
+        System.IO.File.WriteAllLines(savePath, saveItems, Encoding.UTF8)
     End Sub
 
     Private Sub viewAllFilesInIso(Directorie As Object)
