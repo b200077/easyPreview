@@ -32,6 +32,7 @@ Partial Class Form2
         Me.ContextMenuStrip2 = New System.Windows.Forms.ContextMenuStrip(Me.components)
         Me.Panel1 = New System.Windows.Forms.Panel()
         Me.videoPanel = New System.Windows.Forms.Panel()
+        Me.Button8 = New System.Windows.Forms.Button()
         Me.videoControlPanel = New System.Windows.Forms.Panel()
         Me.ComboBox5 = New System.Windows.Forms.ComboBox()
         Me.ProgressBar2 = New System.Windows.Forms.ProgressBar()
@@ -56,7 +57,6 @@ Partial Class Form2
         Me.FlowLayoutPanel1 = New System.Windows.Forms.FlowLayoutPanel()
         Me.Button10 = New System.Windows.Forms.Button()
         Me.Label3 = New System.Windows.Forms.Label()
-        Me.Button8 = New System.Windows.Forms.Button()
         CType(Me.PictureBox1, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.Panel1.SuspendLayout()
         Me.videoPanel.SuspendLayout()
@@ -111,7 +111,7 @@ Partial Class Form2
         '
         Me.TextBox3.ContextMenuStrip = Me.ContextMenuStrip2
         Me.TextBox3.Dock = System.Windows.Forms.DockStyle.Top
-        Me.TextBox3.Font = New System.Drawing.Font("新細明體", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.TextBox3.Font = New System.Drawing.Font("PMingLiU", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         Me.TextBox3.Location = New System.Drawing.Point(0, 0)
         Me.TextBox3.Margin = New System.Windows.Forms.Padding(2)
         Me.TextBox3.Name = "TextBox3"
@@ -149,6 +149,15 @@ Partial Class Form2
         Me.videoPanel.Size = New System.Drawing.Size(904, 749)
         Me.videoPanel.TabIndex = 86
         Me.videoPanel.Visible = False
+        '
+        'Button8
+        '
+        Me.Button8.Location = New System.Drawing.Point(817, 663)
+        Me.Button8.Name = "Button8"
+        Me.Button8.Size = New System.Drawing.Size(75, 23)
+        Me.Button8.TabIndex = 84
+        Me.Button8.Text = "remove"
+        Me.Button8.UseVisualStyleBackColor = True
         '
         'videoControlPanel
         '
@@ -280,7 +289,7 @@ Partial Class Form2
         '
         'TextBox2
         '
-        Me.TextBox2.Font = New System.Drawing.Font("新細明體", 12.0!)
+        Me.TextBox2.Font = New System.Drawing.Font("PMingLiU", 12.0!)
         Me.TextBox2.Location = New System.Drawing.Point(467, 3)
         Me.TextBox2.Name = "TextBox2"
         Me.TextBox2.Size = New System.Drawing.Size(48, 27)
@@ -290,7 +299,7 @@ Partial Class Form2
         'Label2
         '
         Me.Label2.AutoSize = True
-        Me.Label2.Font = New System.Drawing.Font("新細明體", 18.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.Label2.Font = New System.Drawing.Font("PMingLiU", 18.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         Me.Label2.Location = New System.Drawing.Point(521, 0)
         Me.Label2.Name = "Label2"
         Me.Label2.Size = New System.Drawing.Size(27, 24)
@@ -332,7 +341,7 @@ Partial Class Form2
         '
         'TextBox1
         '
-        Me.TextBox1.Font = New System.Drawing.Font("新細明體", 12.0!)
+        Me.TextBox1.Font = New System.Drawing.Font("PMingLiU", 12.0!)
         Me.TextBox1.Location = New System.Drawing.Point(725, 3)
         Me.TextBox1.Name = "TextBox1"
         Me.TextBox1.Size = New System.Drawing.Size(33, 27)
@@ -343,7 +352,7 @@ Partial Class Form2
         'Label1
         '
         Me.Label1.AutoSize = True
-        Me.Label1.Font = New System.Drawing.Font("新細明體", 18.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
+        Me.Label1.Font = New System.Drawing.Font("PMingLiU", 18.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(136, Byte))
         Me.Label1.Location = New System.Drawing.Point(764, 0)
         Me.Label1.Name = "Label1"
         Me.Label1.Size = New System.Drawing.Size(29, 24)
@@ -401,15 +410,6 @@ Partial Class Form2
         Me.Label3.Size = New System.Drawing.Size(37, 33)
         Me.Label3.TabIndex = 15
         Me.Label3.Text = "Label3"
-        '
-        'Button8
-        '
-        Me.Button8.Location = New System.Drawing.Point(817, 663)
-        Me.Button8.Name = "Button8"
-        Me.Button8.Size = New System.Drawing.Size(75, 23)
-        Me.Button8.TabIndex = 84
-        Me.Button8.Text = "remove"
-        Me.Button8.UseVisualStyleBackColor = True
         '
         'Form2
         '

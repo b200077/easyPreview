@@ -14,20 +14,20 @@ Imports Newtonsoft.Json
 
 Module EverythingSearcher
 
-    ' Import Everything32.dll functions (use Everything64.dll for 64-bit systems)
-    <DllImport("Everything32.dll", CharSet:=CharSet.Unicode)>
+    ' Import Everything64.dll functions (use Everything64.dll for 64-bit systems)
+    <DllImport("Everything64.dll", CharSet:=CharSet.Unicode)>
     Public Function Everything_SetSearchW(ByVal lpSearchString As String) As Integer
     End Function
 
-    <DllImport("Everything32.dll")>
+    <DllImport("Everything64.dll")>
     Public Function Everything_QueryW(ByVal bWait As Boolean) As Integer
     End Function
 
-    <DllImport("Everything32.dll")>
+    <DllImport("Everything64.dll")>
     Public Function Everything_GetNumResults() As Integer
     End Function
 
-    <DllImport("Everything32.dll", CharSet:=CharSet.Unicode)>
+    <DllImport("Everything64.dll", CharSet:=CharSet.Unicode)>
     Public Function Everything_GetResultFullPathNameW(ByVal nIndex As Integer, ByVal lpString As System.Text.StringBuilder, ByVal nMaxCount As Integer) As Integer
     End Function
 
@@ -64,7 +64,7 @@ Module EverythingSearcher
 
         ' 組合查詢字串，指定資料夾並使用 parent: 限定範圍
         Dim query As String = folderPath + keyword
-        Console.WriteLine(query)
+        Console.WriteLine($"query = {query}")
         ' 設置查詢字串
         Everything_SetSearchW(query)
 
@@ -690,7 +690,7 @@ Public Class Form2
         If Form1.CheckedListBox1_isCheck("獲取標題") Then
             Dim browser As WebView2 = WebView21
             Dim title As String = Await get_web_title()
-            Form1.ComboBox2.Text = title
+            Form1.Text = title
         End If
         If Form1.fileCollection.SelectedItem IsNot Nothing Then
             If Form1.fileCollection.SelectedItem.Contains("click.mg.dlsite.com") And Not Form1.CheckedListBox1_isCheck("關閉自動修正") Then
@@ -890,7 +890,7 @@ Public Class Form2
             Select Case i
                 Case "get_title"
                     If Form1.CheckedListBox1_isCheck("獲取標題") Then
-                        title = Form1.ComboBox2.Text
+                        title = Form1.Text
                     Else
                         Dim newName = Await Get_web_title()
                         title = If(newName = "null", title, newName)
