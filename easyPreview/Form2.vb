@@ -796,7 +796,7 @@ Public Class Form2
             End If
             If Not WebView21.Source.ToString().Contains("photo/") Then
                 script = " 
-                    var links = document.getElementsByClassName(""css-175oi2r r-1pi2tsx r-1ny4l3l r-1loqt21"");
+                    var links = document.getElementsByClassName(""css-g5y9jx r-1pi2tsx r-1ny4l3l r-1loqt21"");
                     var max = 0;
                     var target = null;
                     for (var i = 0; i < links.length; i++) {

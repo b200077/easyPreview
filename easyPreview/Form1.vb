@@ -12,7 +12,6 @@ Imports System.Security.Cryptography
 Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Threading
-Imports System.Windows.Media.Imaging
 Imports DiscUtils.Iso9660
 Imports ImageMagick
 Imports LibVLCSharp.Shared
@@ -406,7 +405,7 @@ Partial Public Class Form1
         If listBox Is Nothing Then Return
 
         For Each item In listBox.SelectedItems
-            Dim argument As String = "/select, """ & item & """"
+            Dim argument As String = "/select, """ & Remove_label(item) & """"
             System.Diagnostics.Process.Start("explorer.exe", argument)
         Next
     End Sub
@@ -649,7 +648,7 @@ Partial Public Class Form1
         If name.StartsWith("★") Then name = name.Substring(1)
         Return name
     End Function
-    Public Function Standardized_denomination(name As String)
+    Public Function Standardized_denomination(name As String) As String
         '移除開頭標記
         name = Remove_label(name)
         '判斷是否為單獨網站分析，並定向
@@ -1330,15 +1329,6 @@ Partial Public Class Form1
         Dim filename As String = Path.GetFileName(oripath)
         Form3.FileNameTextBox.Text = filename
     End Sub
-    'Private Sub AddItem_from_filedialogue()
-    '    OpenFileDialog1.Filter = "All files (*.*)|*.*"
-    '    OpenFileDialog1.Multiselect = True
-    '    OpenFileDialog1.ShowDialog()
-    '    For Each sr As String In OpenFileDialog1.FileNames
-    '        fileCollection.Items.Add(sr)
-    '    Next
-    '    ' isCodeChange = False
-    'End Sub
     Public Sub Output_file_label(sender As Object, e As EventArgs) Handles Button8.Click
         Form3.Show()
     End Sub
@@ -1635,8 +1625,15 @@ Partial Public Class Form1
             Me.TopMost = shouldTopMost
         End If
         Panel9.Visible = If(CheckedListBox1_isCheck("隱藏壓縮檔案集合"), False, True)
-        Panel13.Visible = If(CheckedListBox1_isCheck("隱藏預覽"), False, True)
-        Button3.Visible = If(CheckedListBox1_isCheck("隱藏預覽"), True, False)
+        If CheckedListBox1_isCheck("隱藏預覽") Then
+            Button3.Visible = True
+            Panel13.Visible = False
+            Width = 800
+        Else
+            Button3.Visible = False
+            Panel13.Visible = True
+            Width = 1412
+        End If
         If CheckedListBox1_isCheck("紀錄關閉視窗") Then
             Call Task.Run(Sub() StartRecordClosePipe())
         End If
@@ -4075,7 +4072,7 @@ Or NotifyFilters.DirectoryName),
         '跳出含textbox的訊息框，有確定和取消，按確定就把item存入listbox
         item = InputBox("輸入新項目：", DefaultResponse:=String.Empty)
         If Not String.IsNullOrEmpty(item) Then
-            AddLink(Standardized_denomination(item))
+            AddItem({Standardized_denomination(item)})
         End If
     End Sub
     Public Sub AddItem(targets As String())
