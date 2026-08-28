@@ -40,7 +40,7 @@ Partial Public Class Form1
         Inherits Form
         Implements IMessageFilter
 
-        Private InterfaceClassGuid As Guid = New Guid(&H4D1E55B2, &HF16F, &H11CF, &H88, &HCB, &H0, &H11, &H11, &H0, &H0, &H30)
+        Private InterfaceClassGuid As New Guid(&H4D1E55B2, &HF16F, &H11CF, &H88, &HCB, &H0, &H11, &H11, &H0, &H0, &H30)
         Private Const WM_DEVICECHANGE As UInteger = &H219
         Private Const DBT_DEVICEARRIVAL As UInteger = &H8000
         Private Const DBT_DEVICEREMOVEPENDING As UInteger = &H8003
@@ -63,12 +63,13 @@ Partial Public Class Form1
         End Function
 
         Public Sub New()
-            Dim DeviceBroadcastHeader As DEV_BROADCAST_DEVICEINTERFACE = New DEV_BROADCAST_DEVICEINTERFACE()
-            DeviceBroadcastHeader.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE
+            Dim DeviceBroadcastHeader As New DEV_BROADCAST_DEVICEINTERFACE With {
+                .dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE
+            }
             DeviceBroadcastHeader.dbcc_size = CUInt(Marshal.SizeOf(DeviceBroadcastHeader))
             DeviceBroadcastHeader.dbcc_reserved = 0
             DeviceBroadcastHeader.dbcc_classguid = InterfaceClassGuid
-            Dim pDeviceBroadcastHeader As IntPtr = IntPtr.Zero
+            Dim pDeviceBroadcastHeader As IntPtr
             pDeviceBroadcastHeader = Marshal.AllocHGlobal(Marshal.SizeOf(DeviceBroadcastHeader))
             Marshal.StructureToPtr(DeviceBroadcastHeader, pDeviceBroadcastHeader, False)
             RegisterDeviceNotification(Me.Handle, pDeviceBroadcastHeader, DEVICE_NOTIFY_WINDOW_HANDLE)
@@ -139,7 +140,7 @@ Partial Public Class Form1
 
 
 
-    Private Sub pathOption(sender As RadioButton, e As EventArgs) Handles RadioButton14.Click, RadioButton1.Click
+    Private Sub PathOption(sender As RadioButton, e As EventArgs) Handles RadioButton14.Click, RadioButton1.Click
         If sender Is RadioButton14 Then
             'TextBox1.Text = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).ToString & "\Downloads"
             Dim downloadPath As String = Registry.GetValue("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders", "{374DE290-123F-4565-9164-39C4925E467B}", Nothing)
@@ -147,7 +148,7 @@ Partial Public Class Form1
             ' 如果沒有設定，則使用預設的下載目錄
 
             ' 取得使用者設定的下載目錄
-            If downloadPath Is Nothing Then
+            If Not downloadPath Then
                 downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) & "\Downloads"
             End If
             PathComboBox.Text = downloadPath
@@ -263,14 +264,13 @@ Partial Public Class Form1
 
             Try
                 Using pipeServer As New NamedPipeServerStream("easyPreview CloseRecord", PipeDirection.InOut)
-                    Invoke(Sub() PasswordBox.Items.Add("等待客戶端連接..."))
+
                     pipeServer.WaitForConnection()
                     'Dim connectTask = pipeServer.WaitForConnectionAsync()
                     'If Not connectTask.Wait(500) Then
                     '    Continue While ' 每 0.5 秒檢查一次取消狀態
                     'End If
 
-                    Invoke(Sub() PasswordBox.Items.Add("客戶端已連接."))
 
                     ' 讀取客戶端發送的消息
                     Using reader As New StreamReader(pipeServer, Encoding.UTF8)
@@ -303,24 +303,18 @@ Partial Public Class Form1
             Using checkClient As New NamedPipeClientStream(".", pipename, PipeDirection.InOut)
                 checkClient.Connect(100) ' 嘗試連線 100ms
                 ' 如果能連上，代表已有伺服器在運作，直接退出
-                ' 向伺服器發送消息
                 Using writer As New StreamWriter(checkClient)
                     writer.AutoFlush = True
                     writer.Write("ShowWindow")
                 End Using
-                'Invoke(Sub() MsgBox("已有其他伺服器啟動，取消啟動本伺服器。"))
+                Console.WriteLine("已有其他伺服器啟動，取消啟動本伺服器。")
                 BeginInvoke(Sub() Me.Close())
 
             End Using
-        Catch ex As TimeoutException
-            ' 無法連線，代表目前沒有伺服器，繼續啟動
         Catch ex As Exception
-            ' 其他異常也視為無法連線（例如 NamedPipe 不存在），繼續啟動
+            Console.WriteLine(ex.Message)
+
         End Try
-        'If pipename.Contains("CloseRecord") And CheckedListBox1_isCheck("紀錄關閉視窗") = False Then
-        '    Invoke(Sub() PasswordBox.Items.Add("關閉紀錄視窗..."))
-        '    Return
-        'End If
         While True
 
             Try
@@ -328,16 +322,16 @@ Partial Public Class Form1
 
                 'pipeIndex += 1 ' 遞增索引，保證名稱唯一
                 Using pipeServer As New NamedPipeServerStream(pipename, PipeDirection.InOut)
-                    Invoke(Sub() PasswordBox.Items.Add("等待客戶端連接..."))
+
 
                     pipeServer.WaitForConnection()
 
-                    Invoke(Sub() PasswordBox.Items.Add("客戶端已連接."))
+
 
                     ' 讀取客戶端發送的消息
                     Using reader As New StreamReader(pipeServer, Encoding.UTF8)
                         Dim message As String = reader.ReadToEnd()
-                        'Invoke(Sub() 壓縮檔案集合.Items.Add("收到的消息: " & message))
+                        Invoke(Sub() SubFileCollection.Items.Add("收到的消息: " & message))
                         'If Not message.Contains(Me.Text) Then Return
                         If message.Contains("add") Then
                             Dim newitem As String = message.Split({"@"}, StringSplitOptions.RemoveEmptyEntries)(1)
@@ -422,7 +416,7 @@ Partial Public Class Form1
     End Sub
     Public Function Add_subStripMenuItem(rightHotKey As ToolStripMenuItem, subName As String, Optional handler As EventHandler = Nothing) As ToolStripMenuItem
         ' 創建子選單項目
-        Dim subHotKey As ToolStripMenuItem = New ToolStripMenuItem(subName)
+        Dim subHotKey As New ToolStripMenuItem(subName)
         If handler IsNot Nothing Then
             AddHandler subHotKey.Click, handler
         End If
@@ -733,7 +727,7 @@ Partial Public Class Form1
             Return encodedUrl ' 解析失敗則返回原始 URL
         End Try
     End Function
-    Public Function twitter_repeat(name As String)
+    Public Function Twitter_repeat(name As String)
         If name.Contains("www.youtube.com/redirect") Then
             ' 檢查網址是否包含 "www.youtube.com/redirect"
             name = ExtractRedirectUrl(name)
@@ -764,7 +758,7 @@ Partial Public Class Form1
         ' 如果條件不符合或沒有找到 "q" 參數，返回原始網址
         Return youtubeUrl
     End Function
-    Public Function dlsite_repeat(name As String)
+    Public Function Dlsite_repeat(name As String)
         Dim dlmatch As Match = dlsiteRgx.Match(name)
         If dlmatch.Success Then
             Dim fn As String = dlmatch.Value
@@ -791,7 +785,7 @@ Partial Public Class Form1
         End If
         Return name
     End Function
-    Public Function nhentai_repeat(name As String)
+    Public Function Nhentai_repeat(name As String)
         Dim nhentaiMatch As Match = nhentaiRgx.Match(name)
         If nhentaiMatch.Success Then
             Dim fn As String = nhentaiMatch.Groups(1).Value
@@ -799,7 +793,7 @@ Partial Public Class Form1
         End If
         Return name
     End Function
-    Public Async Sub delete_repeat_item()
+    Public Async Sub Delete_repeat_item()
         If CheckedListBox1_isCheck("取消自動刪除重複") Then Return
         Dim removeFromStart As Boolean = CheckedListBox1_isCheck("重複移到最底")
         Dim ori_item As String = If(FileCollection.SelectedItem?.ToString(), String.Empty)
@@ -904,7 +898,7 @@ Partial Public Class Form1
 
 
         ' 往上找到 ContextMenuStrip，再透過 SourceControl 取得觸發它的 ListBox
-        Do While Not TypeOf owner Is ContextMenuStrip
+        Do While TypeOf owner IsNot ContextMenuStrip
             If TypeOf owner Is ToolStripDropDownMenu Then
                 owner = CType(owner, ToolStripDropDownMenu).OwnerItem.Owner
             Else
@@ -922,7 +916,7 @@ Partial Public Class Form1
         End If
     End Sub
 
-    Private Sub rearrangeButton(sender As Object, e As EventArgs)
+    Private Sub RearrangeButton(sender As Object, e As EventArgs)
         Dim menuItem As ToolStripMenuItem = CType(sender, ToolStripMenuItem)
         Dim btn_name As String = menuItem.Text
         Dim owner As ToolStrip = menuItem.Owner
@@ -930,15 +924,15 @@ Partial Public Class Form1
 
         ' 根據按鈕名稱執行相應操作
         Select Case btn_name
-            Case "下移" : listRearrange(1)
-            Case "上移" : listRearrange(-1)
-            Case "移到最底" : listRearrange(targetList.Items.Count)
-            Case "移到頂端" : listRearrange(0 - targetList.Items.Count)
+            Case "下移" : ListRearrange(1)
+            Case "上移" : ListRearrange(-1)
+            Case "移到最底" : ListRearrange(targetList.Items.Count)
+            Case "移到頂端" : ListRearrange(0 - targetList.Items.Count)
         End Select
     End Sub
 
     'listRearrange只能移動選取的第一項
-    Private Sub listRearrange(offset As Integer)
+    Private Sub ListRearrange(offset As Integer)
         Dim selectedItem As String = targetList.SelectedItem
         'Dim itemCount As Integer = targetList.Items.Count
         Dim targets As String() = targetList.SelectedItems.Cast(Of String).ToArray
@@ -975,7 +969,7 @@ Partial Public Class Form1
         End If
         Refresh_listbox_numbers()
     End Sub
-    Public Sub listUndo()
+    Public Sub ListUndo()
         Dim select_index = FileCollection.SelectedIndex
         Dim c = backup
         backup = backupUndo
@@ -986,17 +980,19 @@ Partial Public Class Form1
             FileCollection.Items.Add(i)
         Next
         FileCollection.EndUpdate()
-        FileCollection.SetSelected(select_index, True)
+        If select_index >= 0 AndAlso select_index < FileCollection.Items.Count Then
+            FileCollection.SetSelected(select_index, True)
+        End If
         Refresh_listbox_numbers()
     End Sub
-    Private Function select_keyword(files As String(), keywords As String()) As String()
+    Private Function Select_keyword(files As String(), keywords As String()) As String()
         For Each keyword In keywords
             Console.WriteLine($"現在排除{keyword}前，剩餘{files.Count}個檔案")
             files = Array.FindAll(Of String)(files, Function(x) x.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) = -1)
         Next
         Return files
     End Function
-    Private Function check_file_ext(files As String())
+    Private Function Check_file_ext(files As String())
         Dim exts As String() = Constants.GetValue("asmr_ext_in_turn")
         Dim extfiles As New List(Of Array)()
         For Each fileExt In exts
@@ -1018,7 +1014,7 @@ Partial Public Class Form1
             Return extfiles(maxIndex)
         End If
     End Function
-    Private Function check_file_keyword(files As String())
+    Private Function Check_file_keyword(files As String())
         Dim allRadiosUnchecked As Boolean = Not GroupBox3.Controls.OfType(Of RadioButton)().Any(Function(r) r.Checked)
         If allRadiosUnchecked Then
             ' 如果所有 RadioButton 都沒有被選中，這裡將執行相應的代碼
@@ -1032,17 +1028,17 @@ Partial Public Class Form1
             Return "no_compare"
         End If
     End Function
-    Private Function find_all_asmr_sound(target As Array) As Array
+    Private Function Find_all_asmr_sound(target As Array) As Array
         ' 取得目錄下所有 .mp3 檔案
-        Dim files As String() = select_keyword(target, Constants.GetValue("asmrExtraKeywords"))
+        Dim files As String() = Select_keyword(target, Constants.GetValue("asmrExtraKeywords"))
         Console.WriteLine($"找到{files.Count}個檔案")
-        files = check_file_ext(files)
+        files = Check_file_ext(files)
 
         If FileCollection.SelectedItem.Contains("テグラユウキ") Then
-            files = check_file_keyword(files)
+            files = Check_file_keyword(files)
         End If
         ' 篩選關鍵字
-        files = select_keyword(files, Constants.GetValue("asmrSoundKeywords"))
+        files = Select_keyword(files, Constants.GetValue("asmrSoundKeywords"))
         If files.Length = 0 Then
             Console.WriteLine("沒有找到任何音訊檔")
             Return New String() {}
@@ -1175,6 +1171,8 @@ Partial Public Class Form1
         ' 手動更新進度條以反映新的進度
         'UpdateProgressBar()
     End Sub
+
+
     Private Sub StopButton_Click(sender As Object, e As EventArgs) Handles Button25.Click
         _mediaPlayer.Stop()
         Button24.Text = "播放"
@@ -1201,12 +1199,32 @@ Partial Public Class Form1
         End If
     End Sub
     Public Sub Trf_backup(filename As String)
-        Dim saveFolder As String = $"{commonUsed}\backup\" & System.DateTime.Now.ToString("yyyy_MM_dd") & Path.DirectorySeparatorChar
-        Directory.CreateDirectory(saveFolder)
-        Dim backupFile As String = saveFolder & Path.GetFileName(filename)
-        If File.Exists(backupFile) Then Return
-        My.Computer.FileSystem.CopyFile(filename, backupFile)
-        MessageLabel.Text = Path.GetFileName(backupFile) & "備份成功"
+        Try
+            Dim saveFolder As String = $"{commonUsed}\backup\" & DateTime.Now.ToString("yyyy_MM_dd") & Path.DirectorySeparatorChar
+            Directory.CreateDirectory(saveFolder)
+            Dim backupFile As String = saveFolder & Path.GetFileName(filename)
+            If File.Exists(backupFile) Then Return
+            My.Computer.FileSystem.CopyFile(filename, backupFile)
+            MessageLabel.Text = Path.GetFileName(backupFile) & "備份成功"
+        Catch ex As Exception
+            MessageLabel.Text = "備份失敗：" & ex.Message
+        End Try
+    End Sub
+    Private Sub CleanOldBackups(rootFolder As String, keepDays As Integer)
+        Try
+            If Not Directory.Exists(rootFolder) Then Return
+            For Each ddDir In Directory.GetDirectories(rootFolder)
+                Dim folderDate As Date
+                If Date.TryParseExact(Path.GetFileName(ddDir), "yyyy_MM_dd",
+                    Nothing, Globalization.DateTimeStyles.None, folderDate) Then
+                    If (Date.Now - folderDate).TotalDays > keepDays Then
+                        Directory.Delete(ddDir, True)
+                    End If
+                End If
+            Next
+        Catch
+            ' 清理失敗不影響主流程
+        End Try
     End Sub
 
     Dim isReadingData As Boolean = False
@@ -1708,12 +1726,10 @@ Partial Public Class Form1
             Add_new_path(TargetComboBox, "des_pathrecord.txt")
         End If
         Dim pipeName As String = "easyPreview " & PathComboBox.Text
+        Console.WriteLine(pipeName)
         If File.Exists(PathComboBox.Text) Then
             Call Task.Run(Sub() StartPipeServer(pipeName))
         End If
-
-        'isCodeChange = False
-        'SendPipeMessage(Me.Text)
 
     End Sub
     Private Sub ReadDirectory()
@@ -1814,14 +1830,14 @@ Partial Public Class Form1
     End Function
     Private Function GetAllDirectories(path As String) As IEnumerable(Of String)
 
-        Return System.IO.Directory.EnumerateDirectories(path).Union(System.IO.Directory.EnumerateDirectories(path).SelectMany(Function(d)
+        Return Directory.EnumerateDirectories(path).Union(Directory.EnumerateDirectories(path).SelectMany(Function(d)
 
-                                                                                                                                  Try
-                                                                                                                                      Return FileSystem.GetDirectories(path)
-                                                                                                                                  Catch e As UnauthorizedAccessException
-                                                                                                                                      Return Enumerable.Empty(Of String)()
-                                                                                                                                  End Try
-                                                                                                                              End Function))
+                                                                                                              Try
+                                                                                                                  Return FileSystem.GetDirectories(path)
+                                                                                                              Catch e As UnauthorizedAccessException
+                                                                                                                  Return Enumerable.Empty(Of String)()
+                                                                                                              End Try
+                                                                                                          End Function))
     End Function
     Dim filereadtimes As Integer = 0
     Public Function Getallfiles(path As String, keyword As String) As List(Of String)
@@ -1855,7 +1871,7 @@ Partial Public Class Form1
         ' 如果沒有設定，則使用預設的下載目錄
 
         ' 取得使用者設定的下載目錄
-        If downloadPath Is Nothing Then
+        If Not downloadPath Then
             downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) & "\Downloads"
         End If
         Dim record As New List(Of Integer)(2)
@@ -1940,7 +1956,7 @@ Partial Public Class Form1
     Public Sub Refresh_backup()
         If savingTrf Then Return
         Refresh_listbox_numbers()
-        If FileCollection.Items.Count = 0 Then Return
+
         'If PathComboBox.Text.EndsWith(".wmc") Then Return
         If PathComboBox.Text.Contains("backup") Then Return
         If Not String.IsNullOrEmpty(SearchTextBox.Text) Then Return
@@ -1949,7 +1965,7 @@ Partial Public Class Form1
             backupUndo = backup
             backup = FileCollection.Items.Cast(Of String).ToList
         End If
-
+        If FileCollection.Items.Count = 0 Then Return
         If File.Exists(PathComboBox.Text) Then Trf_backup(PathComboBox.Text)
         If Not CheckedListBox1_isCheck("Auto Save") Then Return
         Form3.Form3_Load(New Object, New EventArgs)
@@ -2033,7 +2049,7 @@ Partial Public Class Form1
         Next
     End Sub
     Private Function Ext_table(ext_type As String) As IEnumerable(Of String)
-        Dim ext_explain As IEnumerable(Of String) = {}
+        Dim ext_explain As IEnumerable(Of String)
         If ext_type = "Images" Then
             ext_explain = {".jpg", ".png", ".jfif", ".gif", ".jpeg"}.Concat(Ext_table("其他圖片"))
         ElseIf ext_type = "其他圖片" Then
@@ -2101,7 +2117,6 @@ Partial Public Class Form1
             Return
         End If
         Dim btn_name = sender.text
-        Dim operate As Integer = 0
         Dim tarindex As Integer = 0
         If btn_name = "next" Then
             If Not targetList.SelectedIndex = targetList.Items.Count - 1 Then
@@ -2120,7 +2135,7 @@ Partial Public Class Form1
         targetList.SetSelected(tarindex, True)
     End Sub
     Private isButtonPressed As Boolean = False
-    Public Async Sub quick_page(sender As Object, e As EventArgs) Handles nextButton.MouseDown, previousButton.MouseDown
+    Public Async Sub Quick_page(sender As Object, e As EventArgs) Handles nextButton.MouseDown, previousButton.MouseDown
         isButtonPressed = True
         While isButtonPressed
             Await Task.Delay(500) ' 等待 500 毫秒（非同步，不阻塞 UI）
@@ -2134,21 +2149,21 @@ Partial Public Class Form1
     End Sub
     Public Sub Next_Page_PDF(sender As Object, e As EventArgs)
         Dim btn_name = sender.text
-        Dim rgx As Regex = New Regex("頁數：(\d+)/")
+        Dim rgx As New Regex("頁數：(\d+)/")
         If btn_name = "next" Then
             Dim now_page As Short = rgx.Match(Label10.Text).Groups(1).Value
             If doc.Pages.Count <= now_page Then Return
             now_page += 1
-            Dim bmp As System.Drawing.Image = doc.SaveAsImage(now_page - 1)
+            Dim bmp As Image = doc.SaveAsImage(now_page - 1)
             Label10.Text = "頁數：" & now_page.ToString & Path.AltDirectorySeparatorChar & doc.Pages.Count.ToString
-            PictureBox1.Image = CType(bmp, System.Drawing.Image)
+            PictureBox1.Image = CType(bmp, Image)
         ElseIf btn_name = "previous" Then
             Dim now_page As Short = rgx.Match(Label10.Text).Groups(1).Value
             If now_page <= 1 Then Return
             now_page -= 1
-            Dim bmp As System.Drawing.Image = doc.SaveAsImage(now_page - 1)
+            Dim bmp As Image = doc.SaveAsImage(now_page - 1)
             Label10.Text = "頁數：" & now_page.ToString & Path.AltDirectorySeparatorChar & doc.Pages.Count.ToString
-            PictureBox1.Image = CType(bmp, System.Drawing.Image)
+            PictureBox1.Image = CType(bmp, Image)
         End If
     End Sub
 
@@ -2435,7 +2450,7 @@ Partial Public Class Form1
         'last_folder = Path.GetDirectoryName(curitem)
         'Console.WriteLine(last_folder + name)
 
-        Dim rgx As Regex = New Regex("(20\d{2})")
+        Dim rgx As New Regex("(20\d{2})")
         Dim result = rgx.Match(last_folder)
         Dim draw_path As String = ""
         If result.Success Then
@@ -2600,7 +2615,7 @@ Partial Public Class Form1
         End If
         If CheckedListBox1_isCheck("Close Preview") Then Return
         If Ext_judge(ext, "程序") Then
-            Dim setProcess As System.Diagnostics.Process = allProcesses(FileCollection.SelectedIndex)
+            Dim setProcess As Process = allProcesses(FileCollection.SelectedIndex)
             Console.WriteLine(setProcess.StandardInput)
 
         ElseIf Ext_judge(ext, "其他圖片") Then
@@ -2612,20 +2627,20 @@ Partial Public Class Form1
             Label15.Show()
 
             If CheckedListBox1_isCheck("ASMR播放模式") Then
-                CType(PictureBox1.Image, Bitmap).MakeTransparent(System.Drawing.Color.White)
+                CType(PictureBox1.Image, Bitmap).MakeTransparent(Color.White)
 
             End If
             Try
                 Try
                     MyImage = New Bitmap(curitem)
                     Label15.Text = MyImage.Size.Width & "px " & MyImage.Size.Height & "px"
-                    PictureBox1.Image = CType(MyImage.Clone, System.Drawing.Image)
-                    transfer_image_toForm2()
+                    PictureBox1.Image = CType(MyImage.Clone, Image)
+                    Transfer_image_toForm2()
                     MyImage.Dispose()
                 Catch ex As Exception
                     Dim bmp = New Bitmap(PictureBox1.Width, PictureBox1.Height)
-                    Dim g = System.Drawing.Graphics.FromImage(bmp)
-                    g.DrawString("檔案毀損", New System.Drawing.Font("新細明體", 9), System.Drawing.Brushes.Black, New System.Drawing.PointF(10, 10))
+                    Dim g = Graphics.FromImage(bmp)
+                    g.DrawString("檔案毀損", New Font("新細明體", 9), Brushes.Black, New PointF(10, 10))
                     PictureBox1.Image = bmp
                 End Try
             Catch ex As Exception
@@ -2634,9 +2649,9 @@ Partial Public Class Form1
         ElseIf ext = ".pdf" Then
             doc.LoadFromFile(curitem)
             '遍歷PDF每一頁
-            Dim bmp As System.Drawing.Image = doc.SaveAsImage(0)
+            Dim bmp As Image = doc.SaveAsImage(0)
             Try
-                PictureBox1.Image = CType(bmp, System.Drawing.Image)
+                PictureBox1.Image = CType(bmp, Image)
                 Label10.Text = "頁數：1/" & doc.Pages.Count.ToString
                 If Form2.Visible = True Then Form2.PictureBox1.Image = PictureBox1.Image
             Catch ex As Exception
@@ -2645,7 +2660,7 @@ Partial Public Class Form1
         ElseIf ext = ".xls" Or ext = ".xlsx" Then
             Me.DataGridView1.Show()
             Dim strConn As String = “Provider=Microsoft.ACE.OLEDB.12.0;” & “Data Source=” & curitem & “;” & “Extended Properties=Excel 12.0;”
-            Dim conn As OleDbConnection = New OleDbConnection(strConn)
+            Dim conn As New OleDbConnection(strConn)
             conn.Open()
             Dim strExcel As String = “”
             Dim myCommand As OleDbDataAdapter
@@ -2737,10 +2752,10 @@ Partial Public Class Form1
                     SubFileCollection.Items.Add(entry.key)
                 Next
             End Try
-            System.Threading.Tasks.Task.WaitAll()
+            Task.WaitAll()
             FindFirstBitmap(SubFileCollection)
         ElseIf Ext_judge(curitem, "網頁") Then
-            Dim rgx As Regex = New Regex("(http.*)")
+            Dim rgx As New Regex("(http.*)")
             curitem = rgx.Match(curitem).Groups(1).Value
             Transform_index_status_to_Form2()
             Call Form2.WebMode(curitem)
@@ -2756,7 +2771,7 @@ Partial Public Class Form1
         End If
     End Sub
 
-    Private Sub specialPicture(curitem As String)
+    Private Sub SpecialPicture(curitem As String)
         If CheckedListBox1_isCheck("使用nconvert") Then
             ' 替換檔案名稱中的特殊字元，例如inputjpg
             Console.WriteLine(curitem)
@@ -2791,7 +2806,7 @@ Partial Public Class Form1
 
         Else
             Try
-                Dim img As MagickImage = New MagickImage(curitem)
+                Dim img As New MagickImage(curitem)
                 Using memStream As New MemoryStream()
                     img.Format = MagickFormat.Bmp
                     img.Write(memStream)
@@ -2804,14 +2819,14 @@ Partial Public Class Form1
                 Dim shellFile1 As ShellFile = ShellFile.FromFilePath(curitem)
                 shellFile1.Thumbnail.FormatOption = ShellThumbnailFormatOption.Default
                 Dim shellThumb As Bitmap = shellFile1.Thumbnail.Bitmap
-                PictureBox1.Image = CType(shellThumb, System.Drawing.Image)
+                PictureBox1.Image = CType(shellThumb, Image)
                 If Form2.Visible = True Then Form2.PictureBox1.Image = PictureBox1.Image
                 Transform_index_status_to_Form2()
             End Try
         End If
 
     End Sub
-    Private Sub addsubtitle(curitem As String)
+    Private Sub Addsubtitle(curitem As String)
 
         Dim itemDirectory = Path.GetDirectoryName(curitem)
         Dim subtitlePath As String = Path.Combine(itemDirectory, Path.GetFileNameWithoutExtension(curitem))
@@ -2820,7 +2835,7 @@ Partial Public Class Form1
             Return
             '_mediaPlayer.AddSlave(MediaSlaveType.Subtitle, subtitlePath, True)
         End If
-        Dim rgx As Regex = New Regex("(.*\W*)\W(\d{1}|\d{2})(\W.*)")
+        Dim rgx As New Regex("(.*\W*)\W(\d{1}|\d{2})(\W.*)")
         Dim match_result As Match = rgx.Match(FileCollection.SelectedItem)
         Dim episode As Integer = Integer.Parse(match_result.Groups(2).Value)
         For Each files In Directory.GetFiles(itemDirectory)
@@ -2858,19 +2873,19 @@ Partial Public Class Form1
         Function GetImage(ByVal size As Size, ByVal flags As SIIGBF, <Out> ByRef phbm As IntPtr) As Integer
     End Interface
 
-    Private Sub transfer_image_toForm2()
+    Private Sub Transfer_image_toForm2()
         Form2.PictureMode()
         Transform_index_status_to_Form2()
         Form2.Adjustment_Form()
         Form2.Label15.Text = Label15.Text
     End Sub
     Private Shared Sub DisplayPropertyValue(ByVal prop As IShellProperty)
-        Dim value As String = String.Empty
+        Dim value As String
         value = If(prop.ValueAsObject Is Nothing, "", prop.FormatForDisplay(PropertyDescriptionFormatOptions.None))
         Debug.WriteLine(prop.CanonicalName & " " & value)
     End Sub
 
-    Public Function try_password(curitem As String, index As Short)
+    Public Function Try_password(curitem As String, index As Short)
         Console.WriteLine(PasswordBox.Items(index))
         PasswordBox.SetSelected(index, True)
         Dim passward As String = PasswordBox.Items(index).ToString
@@ -2878,7 +2893,7 @@ Partial Public Class Form1
             archive = ArchiveFactory.OpenArchive(curitem, New SharpCompress.Readers.ReaderOptions With {.Password = passward})
         Catch ex As Exception
             If Not index = PasswordBox.Items.Count - 1 Then
-                passward = try_password(curitem, index + 1)
+                passward = Try_password(curitem, index + 1)
             Else
                 MsgBox("讀取檔案失敗" & curitem & "可能有密碼或密碼錯誤")
                 archive.Dispose()
@@ -2930,7 +2945,7 @@ Partial Public Class Form1
                     specialPicture(curitem)
                 Else
                     Try
-                        Dim img As MagickImage = New MagickImage(curitemStream)
+                        Dim img As New MagickImage(curitemStream)
                         Using memStream As New MemoryStream()
                             img.Format = MagickFormat.Bmp
                             img.Write(memStream)
@@ -2948,10 +2963,10 @@ Partial Public Class Form1
                 RichTextBox1.Hide()
                 Label15.Show()
                 Try
-                    Dim MyImage As Bitmap = New Bitmap(curitemStream)
+                    Dim MyImage As New Bitmap(curitemStream)
                     Label15.Text = MyImage.Size.Width & "px " & MyImage.Size.Height & "px"
-                    PictureBox1.Image = CType(MyImage.Clone, System.Drawing.Image)
-                    transfer_image_toForm2()
+                    PictureBox1.Image = CType(MyImage.Clone, Image)
+                    Transfer_image_toForm2()
                     MyImage.Dispose()
                 Catch ex As Exception
                     MsgBox("無法顯示圖片" & ex.GetType().FullName & ex.Message)
@@ -3030,24 +3045,24 @@ Partial Public Class Form1
         For Each CDentry In Directorie.GetFiles
             MessageLabel.Text = "解壓" & CDentry.Name
             Dim newfilePath As New StringBuilder("")
-            newfilePath.Append(directname.ToString & System.IO.Path.DirectorySeparatorChar & CDentry.Name.Replace(";1", "").ToLower)
+            newfilePath.Append(directname.ToString & Path.DirectorySeparatorChar & CDentry.Name.Replace(";1", "").ToLower)
             Dim newfile = File.Create(newfilePath.ToString)
-            Dim path As Stream = cd.OpenFile(CDentry.FullName, FileMode.Open)
-            path.CopyTo(newfile)
+            Dim cdpath As Stream = cd.OpenFile(CDentry.FullName, FileMode.Open)
+            cdpath.CopyTo(newfile)
             newfile.Close()
         Next
         For Each CDentry In Directorie.GetDirectories
             ExtrackAllFilesInIso(CDentry, cd, savefilename)
         Next
     End Sub
-    Public Function checkindexlast(selected_list As Array, maxItem As Short)
+    Public Function Checkindexlast(selected_list As Array, maxItem As Short)
         'selected_list need reverse
         If selected_list.Length = 0 Then
             Return Nothing
         ElseIf selected_list(0) = maxItem - 2 Then
             Array.Clear(selected_list, 0, 1)
             maxItem -= 1
-            checkindexlast(selected_list, maxItem)
+            Checkindexlast(selected_list, maxItem)
         ElseIf selected_list.Length <> 1 Then
             selected_list(0) -= 1
             Array.Reverse(selected_list)
@@ -3058,7 +3073,7 @@ Partial Public Class Form1
         End If
         Return Nothing
     End Function
-    Public Sub release_all_process(Optional archive_close As Boolean = True)
+    Public Sub Release_all_process(Optional archive_close As Boolean = True)
 
 
         If CheckedListBox1_isCheck("鎖定") Then Return
@@ -3092,7 +3107,7 @@ Partial Public Class Form1
         End If
 
     End Sub
-    Private Function checkSameMedia(curitem As String) As Boolean
+    Private Function CheckSameMedia(curitem As String) As Boolean
         If ComboBox5.SelectedItem IsNot Nothing Then
             If ComboBox5.SelectedItem.ToString() = "自動重播(單首)" And Not _mediaPlayer.Media.State = VLCState.Playing Then
                 Return False
@@ -3234,7 +3249,7 @@ Partial Public Class Form1
 
                             Using vhdStream As FileStream = filestream1
 
-                                Dim cd As CDReader = New CDReader(vhdStream, True)
+                                Dim cd As New CDReader(vhdStream, True)
                                 Dim pattern As String = "[AaUuTtOoRrUuNn]{7}\.[infINF]{3}"
                                 Dim rgx As New Regex(pattern)
                                 Dim infor As String = "AUTORUN.INF"
@@ -3267,7 +3282,7 @@ Partial Public Class Form1
                                 rgx = New Regex(pattern)
                                 For Each match As Match In rgx.Matches(sentence)
                                     Console.WriteLine("Found '{0}' at position {1}", match.Value, match.Index)
-                                    System.Diagnostics.Process.Start(saveFolder & Path.DirectorySeparatorChar & match.Value)
+                                    Process.Start(saveFolder & Path.DirectorySeparatorChar & match.Value)
                                 Next
 
                             End Using
@@ -3366,7 +3381,7 @@ Partial Public Class Form1
                         CheckBox5.Checked = False
                     Case "計算"
                         Dim totalSum As Integer = 0
-                        Dim rgx As Regex = New Regex("(\d+)")
+                        Dim rgx As New Regex("(\d+)")
                         For Each foundfile As String In collections
                             Dim matches = rgx.Matches(foundfile)
                             If rgx.IsMatch(foundfile) Then
@@ -3377,7 +3392,7 @@ Partial Public Class Form1
                             End If
                         Next
                         Dim bmp As New Bitmap(PictureBox1.Width, PictureBox1.Height)
-                        Using g As System.Drawing.Graphics = System.Drawing.Graphics.FromImage(bmp)
+                        Using g As Graphics = Graphics.FromImage(bmp)
                             Dim message As String = $"總共{totalSum}元"
                             g.DrawString(message, New Font("新細明體", 9), Brushes.Black, New PointF(10, 10))
                         End Using
@@ -3401,12 +3416,12 @@ Partial Public Class Form1
                                 Dim imgPath As String = foundfile
                                 Dim fileName As String = Path.GetFileName(foundfile)
 
-                                Dim imgStream As New System.IO.MemoryStream()
+                                Dim imgStream As New MemoryStream()
 
                                 ' 使用 GDI+ 處理透明度與高相容性白底
                                 Using originalBmp As New Bitmap(imgPath)
                                     Using newBmp As New Bitmap(originalBmp.Width, originalBmp.Height, PixelFormat.Format24bppRgb)
-                                        Using g As System.Drawing.Graphics = System.Drawing.Graphics.FromImage(newBmp)
+                                        Using g As Graphics = Graphics.FromImage(newBmp)
                                             ' 將背景填滿白色
                                             g.Clear(Color.White)
                                             ' 繪製原圖
@@ -3455,16 +3470,16 @@ Partial Public Class Form1
         '    app = "C:\Program Files\MuseScore 3\bin\MuseScore3.exe"
         'End If
         If CheckedListBox1_isCheck("啟動") Then
-            Dim proinfo As ProcessStartInfo = New ProcessStartInfo With {
+            Dim proinfo As New ProcessStartInfo With {
         .FileName = app,
          .Arguments = arguments,
-         .StandardErrorEncoding = System.Text.Encoding.UTF8,
+         .StandardErrorEncoding = Encoding.UTF8,
         .UseShellExecute = False,
          .RedirectStandardError = True,
          .RedirectStandardOutput = True
            }
 
-            Dim prostart As System.Diagnostics.Process = New System.Diagnostics.Process With {
+            Dim prostart As New Process With {
              .StartInfo = proinfo
 }
             prostart.Start()
@@ -3475,7 +3490,7 @@ Partial Public Class Form1
             ' Process.Start(foundfile)
         End If
 
-        If Not CheckBox5.Checked And Not targetList Is SubFileCollection And FileCollection.Items.Count > 0 Then
+        If Not CheckBox5.Checked And targetList IsNot SubFileCollection And FileCollection.Items.Count > 0 Then
             If collections_number.Count > 10 Then
                 collections_number.RemoveRange(10, collections_number.Count - 10)
             End If
@@ -3517,7 +3532,7 @@ Partial Public Class Form1
         End Using
     End Function
     Private Sub Button4openFile(Collections As String(), collections_number As List(Of Integer))
-        Dim arguments As String = ""
+
         For Each foundfile As String In Collections
             Dim fileLabel As String = Remove_label(foundfile)
             Dim filename As String = Path.GetFileName(fileLabel)
@@ -3530,27 +3545,27 @@ Partial Public Class Form1
                     'If exeName.IndexOf("CHS", StringComparison.OrdinalIgnoreCase) > 0 Then
                     '    guidNumber = "c87d06b2-5079-48c2-b658-d92175880bf6"
                     'End If
-                    Dim p As ProcessStartInfo = New ProcessStartInfo()
+                    Dim p As New ProcessStartInfo()
                     Dim lePath As String = "E:\download\Locale_Remulator.1.5.3-beta.1\Locale_Remulator.1.5.3-beta.1\LRProc.exe"
                     p.FileName = lePath
                     p.Arguments = $"{guidNumber} ""{exeName}"""
                     p.Verb = "runas" ' 要求以系統管理員身份執行
                     p.UseShellExecute = True
                     p.WorkingDirectory = Path.GetDirectoryName(lePath)
-                    Dim res As System.Diagnostics.Process = System.Diagnostics.Process.Start(p)
+                    Dim res As Process = Process.Start(p)
                 ElseIf CheckedListBox1_isCheck("locale emulator") Then
                     Dim exeName As String = fileLabel
                     Dim guidNumber As String = "8b37cfbd-4613-4e63-b3ba-d24c4c85c0ff"
                     If exeName.IndexOf("CHS", StringComparison.OrdinalIgnoreCase) > 0 Then
                         guidNumber = "c87d06b2-5079-48c2-b658-d92175880bf6"
                     End If
-                    Dim p As ProcessStartInfo = New ProcessStartInfo()
+                    Dim p As New ProcessStartInfo()
                     Dim lePath As String = "C:\Locale.Emulator.2.5.0.1\LEProc.exe"
                     p.FileName = lePath
                     p.Arguments = $"-runas {guidNumber} ""{exeName}"""
                     p.UseShellExecute = False
                     p.WorkingDirectory = Path.GetDirectoryName(lePath)
-                    Dim res As System.Diagnostics.Process = System.Diagnostics.Process.Start(p)
+                    Dim res As Process = Process.Start(p)
                     res.WaitForInputIdle(5000)
                 End If
             Else
@@ -3581,14 +3596,14 @@ Partial Public Class Form1
     End Sub
     Public Function Rename_Anothor_Thread(foundfile As String)
         If (Me.InvokeRequired) Then
-            Dim del As DelShowMessage = New DelShowMessage(AddressOf Rename_Anothor_Thread)
+            Dim del As New DelShowMessage(AddressOf Rename_Anothor_Thread)
             Me.Invoke(del, foundfile)
         Else
             Console.WriteLine(foundfile)
 
             Dim folder As String = Path.GetDirectoryName(foundfile)
             Dim newname As String = Path.GetFileNameWithoutExtension(foundfile)
-            Dim rgx As Regex = New Regex("string:(\d+)")
+            Dim rgx As New Regex("string:(\d+)")
             If Ext_judge(foundfile, "目錄") Then
                 Select Case FileNameComboBox.SelectedIndex
                     Case 1
@@ -3651,7 +3666,7 @@ Partial Public Class Form1
     End Function
     Public Function Delete_Anothor_Thread(foundfile As String)
         If (Me.InvokeRequired) Then
-            Dim del As DelShowMessage = New DelShowMessage(AddressOf Delete_Anothor_Thread)
+            Dim del As New DelShowMessage(AddressOf Delete_Anothor_Thread)
             Me.Invoke(del, foundfile)
         Else
             If Not Directory.Exists(foundfile) And Not File.Exists(foundfile) Then
@@ -3707,7 +3722,7 @@ Partial Public Class Form1
 
     End Sub
 
-    Public Function get_file_watch(path As String)
+    Public Function Get_file_watch(path As String)
         Dim watcher = New FileSystemWatcher(path) With {
            .NotifyFilter = (NotifyFilters.LastAccess _
 Or NotifyFilters.LastWrite _
@@ -3735,38 +3750,12 @@ Or NotifyFilters.DirectoryName),
         Dim watcher2 = get_file_watch("E:\")
         Dim watcher3 = get_file_watch("F:\")
     End Sub
-    Private Sub game_Watch(sender As Object, e As EventArgs)
-        Dim watcher1 = get_file_watch("F:\galgame")
-        Dim watcher2 = get_file_watch("F:\工口rpg")
+    Private Sub Game_Watch(sender As Object, e As EventArgs)
+        Dim watcher1 = Get_file_watch("F:\galgame")
+        Dim watcher2 = Get_file_watch("F:\工口rpg")
     End Sub
-    Public Class ThreadWithState
-        ' State information used in the task.
-        Private ReadOnly boilerplate As String
-        Private ReadOnly numberValue As Integer
 
-        ' Delegate used to execute the callback method when the
-        ' task is complete.
-        Private ReadOnly callback As ExampleCallback
 
-        ' The constructor obtains the state information and the
-        ' callback delegate.
-        Public Sub New(text As String, number As Integer,
-        callbackDelegate As ExampleCallback)
-            boilerplate = text
-            numberValue = number
-            callback = callbackDelegate
-        End Sub
-
-        ' The thread procedure performs the task, such as
-        ' formatting and printing a document, and then invokes
-        ' the callback delegate with the number of lines printed.
-        Public Sub ThreadProc()
-            Console.WriteLine(boilerplate, numberValue)
-            If Not (callback Is Nothing) Then
-                callback(1)
-            End If
-        End Sub
-    End Class
     Public Delegate Sub ExampleCallback(lineCount As Integer)
     Private Sub OnChanged(source As Object, e As FileSystemEventArgs)
         'check_order(e.FullPath)
@@ -3776,9 +3765,9 @@ Or NotifyFilters.DirectoryName),
 
     End Sub
 
-    Public Function index_Anothor_Thread(name As String)
+    Public Function Index_Anothor_Thread(name As String)
         If (Me.InvokeRequired) Then
-            Dim del As DelShowMessage = New DelShowMessage(AddressOf index_Anothor_Thread)
+            Dim del As New DelShowMessage(AddressOf Index_Anothor_Thread)
             Me.Invoke(del, name)
         Else
             Thread.Sleep(5000)
@@ -3793,22 +3782,22 @@ Or NotifyFilters.DirectoryName),
         End If
         Return True
     End Function
-    Public Function combobox3AnothorThread(matchtext As String)
+    Public Function Combobox3AnothorThread(matchtext As String)
         If (Me.InvokeRequired) Then
-            Dim del As DelShowMessage = New DelShowMessage(AddressOf combobox3AnothorThread)
+            Dim del As New DelShowMessage(AddressOf Combobox3AnothorThread)
             Return Me.Invoke(del, matchtext)
         Else
             Return PathComboBox.Text.Contains(matchtext)
         End If
     End Function
-    Private Sub fileFilter(name As String)
+    Private Sub FileFilter(name As String)
         'If isopening Then Return
         Dim ext As String = Path.GetExtension(name).ToLower
-        If Ext_judge(ext, ".clip") And combobox3AnothorThread("clip.trf") Then
+        If Ext_judge(ext, ".clip") And Combobox3AnothorThread("clip.trf") Then
             Console.WriteLine($"File: created in {name}")
             AddItemListbox(name)
             Delete_thumbnail(name)
-        ElseIf Ext_judge(ext, "遊戲") And combobox3AnothorThread("遊戲") Then
+        ElseIf Ext_judge(ext, "遊戲") And Combobox3AnothorThread("遊戲") Then
             If name.IndexOf("config", StringComparison.OrdinalIgnoreCase) > 0 Then Return
             If name.IndexOf("uninstall", StringComparison.OrdinalIgnoreCase) > 0 Then Return
             If name.IndexOf("UnityCrashHandler", StringComparison.OrdinalIgnoreCase) > 0 Then Return
@@ -3817,9 +3806,9 @@ Or NotifyFilters.DirectoryName),
             '    If Directory.GetParent(name).ToString = "E:\ASMR" Then
 
             '    End If
-        ElseIf Ext_judge(ext, "Media") And combobox3AnothorThread("ASMR") Then
+        ElseIf Ext_judge(ext, "Media") And Combobox3AnothorThread("ASMR") Then
             AddItemListbox(Directory.GetParent(name).ToString)
-        ElseIf combobox3AnothorThread(name) Then
+        ElseIf Combobox3AnothorThread(name) Then
             CheckedListBox1_setCheck("Auto Save", False)
             Button13_Click(New Object, New EventArgs)
             PathComboBox.Name = name
@@ -3838,7 +3827,7 @@ Or NotifyFilters.DirectoryName),
     Private Delegate Function DelShowMessage(sMessage As String)
     Public Function AddItemListbox(s As String)
         If (Me.InvokeRequired) Then
-            Dim del As DelShowMessage = New DelShowMessage(AddressOf AddItemListbox)
+            Dim del As New DelShowMessage(AddressOf AddItemListbox)
             Me.Invoke(del, s)
         Else
             If s.Contains("CELSYSUserData") Or s.Contains("previewthumb") Then
@@ -3864,18 +3853,18 @@ Or NotifyFilters.DirectoryName),
 
     End Sub
 
-    Dim WithEvents Client As New System.Net.WebClient()
+    Dim WithEvents Client As New WebClient()
     Public Sub Button9_Click(sender As Object, e As EventArgs) Handles Button9.Click
         If Form2.WebView21.Visible = False Then Return
         Add_new_path(TargetComboBox, "des_pathrecord.txt")
         Form2.CheckWebSite()
         'refresh_listbox_numbers()
     End Sub
-    Private Sub Client_DownloadProgressChanged(ByVal sender As Object, ByVal e As System.Net.DownloadProgressChangedEventArgs) Handles Client.DownloadProgressChanged '當Client正在下載時
+    Private Sub Client_DownloadProgressChanged(ByVal sender As Object, ByVal e As DownloadProgressChangedEventArgs) Handles Client.DownloadProgressChanged '當Client正在下載時
         ProgressBar1.PerformStep()
 
     End Sub
-    Private Sub Client_DownloadFileCompleted(ByVal sender As Object, ByVal e As System.ComponentModel.AsyncCompletedEventArgs) Handles Client.DownloadFileCompleted  '當Clien結束下載
+    Private Sub Client_DownloadFileCompleted(ByVal sender As Object, ByVal e As AsyncCompletedEventArgs) Handles Client.DownloadFileCompleted  '當Clien結束下載
         'e.Cancelled 判斷是否為中斷(取消)下載
         'e.Error '判斷下載過程是否因發生錯誤而停止下載
     End Sub
@@ -3932,7 +3921,7 @@ Or NotifyFilters.DirectoryName),
                 SearchTextBox.Text = ""
             End If
         Else
-            Dim now_select As Integer = 0
+            Dim now_select As Integer
             Dim list_backup As New List(Of String)
             list_backup.AddRange(FileCollection.SelectedItems.Cast(Of String).ToArray())
             now_select = FileCollection.SelectedIndex
@@ -3975,19 +3964,22 @@ Or NotifyFilters.DirectoryName),
     Public Sub Add_additional_operation()
         ' 定義 CheckedListBox 和 ComboBox 的選項
         Dim checkedListBoxItems As String() = {
-        "Close Preview", "鎖定", "ASMR播放模式", "Auto Save", "下載在TargetBox", "紀錄關閉視窗", "插入選取的下一項",' "執行壓縮檔案",
-        "locale emulator", "locale remulator", "移動時選取原項", "下載時不按讚", '"下載影片",
-        "重複移到最底", "關閉自動修正", "固定在最上層",
+        "Close Preview", "Close Load File",
+        "隱藏預覽", "隱藏壓縮檔案集合",
+        "固定在最上層", "紀錄關閉視窗",
+         "重複移到最底", "插入選取的下一項",
+         "更改附檔名", "Auto Save", "下載在TargetBox",
+         "移動時選取原項", "下載時不按讚", "關閉自動修正",
         "執行後移出", "執行後移到最後一項",
-         "更改附檔名", "取消自動刪除重複", "Combine trf files",
-        "Close Load File", "隱藏壓縮檔案集合", "隱藏預覽",
-         "使用nconvert", "imgToPdf打印文件名"
+         "取消自動刪除重複", "Combine trf files",
+         "locale emulator", "locale remulator",
+         "鎖定", "ASMR播放模式", "使用nconvert", "imgToPdf打印文件名"
     }
 
         Dim comboBox7Items As String() = {
-        "Rename", "自動分類", "加標籤",
-        "Compression", "Decompression", "Set Up", "Synchronize",
-        "檢查路徑", "檢查網址", "計算", "imgToPdf", "sendtoDL"
+        "Rename", "sendtoDL", "自動分類", "加標籤", "imgToPdf",
+        "Compression", "Decompression", "Set Up",
+        "檢查路徑", "檢查網址", "計算"
     }
 
         Dim comboBox5Items As String() = {
@@ -4009,12 +4001,12 @@ Or NotifyFilters.DirectoryName),
         orderComboBox.Items.AddRange(comboBox1Items)
     End Sub
 
-    Private Sub Form1_text1_DragDrop(sender As System.Object, e As System.Windows.Forms.DragEventArgs) Handles PathComboBox.DragDrop, PathComboBox.DragDrop
+    Private Sub Form1_text1_DragDrop(sender As Object, e As DragEventArgs) Handles PathComboBox.DragDrop, PathComboBox.DragDrop
         Dim files() As String = e.Data.GetData(DataFormats.FileDrop)
         PathComboBox.Text = files(0)
         'Add_new_path(ComboBox3, "ori_pathrecord.txt")
     End Sub
-    Private Sub Form1_text2_DragDrop(sender As System.Object, e As System.Windows.Forms.DragEventArgs) Handles TargetComboBox.DragDrop, TargetComboBox.DragDrop
+    Private Sub Form1_text2_DragDrop(sender As Object, e As DragEventArgs) Handles TargetComboBox.DragDrop, TargetComboBox.DragDrop
         Dim files() As String = e.Data.GetData(DataFormats.FileDrop)
         TargetComboBox.Text = files(0)
         'Add_new_path(ComboBox4, "des_pathrecord.txt")
@@ -4059,8 +4051,7 @@ Or NotifyFilters.DirectoryName),
         If control Is Nothing Then Return
 
         Console.WriteLine($"add item from {control}")
-        Form4.Show()
-        Form4.Setdata_from_clipboard()
+        AddItem(Setdata_from_clipboard())
     End Sub
     Public Sub AddItem_from_textbox(sender As Object, e As EventArgs)
 
@@ -4086,6 +4077,9 @@ Or NotifyFilters.DirectoryName),
         Else
             InsertLink(targets)
         End If
+    End Sub
+    Public Sub AddItem(target As String)
+        AddItem({target})
     End Sub
 
     Private Function GetControlWithFallback(sender As ToolStripMenuItem) As ListBox
@@ -4178,7 +4172,7 @@ Or NotifyFilters.DirectoryName),
     End Sub
 
 
-    Private Sub getOutputDevices() Handles DeviceComboBox.Click
+    Private Sub GetOutputDevices() Handles DeviceComboBox.Click
         'If ComboBox8.Items.Count <> 0 Then Return
         Dim originselectitem As String = DeviceComboBox.SelectedItem
         DeviceComboBox.Items.Clear()
@@ -4211,7 +4205,7 @@ Or NotifyFilters.DirectoryName),
     End Sub
     ' 設置指定的音訊輸出設備
 
-    Private Sub combobox8_SelectedIndexChanged(sender As Object, e As EventArgs) Handles DeviceComboBox.SelectedIndexChanged
+    Private Sub DeviceComboBox_SelectedIndexChanged(sender As Object, e As EventArgs) Handles DeviceComboBox.SelectedIndexChanged
         Dim deviceIdentifier As String = _mediaPlayer.AudioOutputDeviceEnum(DeviceComboBox.SelectedIndex).DeviceIdentifier ' 獲取設備標識符
         _mediaPlayer.SetOutputDevice(deviceIdentifier)
     End Sub
@@ -4315,9 +4309,7 @@ Or NotifyFilters.DirectoryName),
             Case Keys.V
                 'If targetList Is Nothing Or PathComboBox.Text.Contains("ASMR") Then 
                 targetList = FileCollection
-                Form4.Form4_Load()
-                Form4.Setdata_from_clipboard()
-                Form4.Button1_Click(sender, e)
+                AddItem(Setdata_from_clipboard())
             Case Keys.End
                 listRearrange(FileCollection.Items.Count)
         End Select
@@ -4468,7 +4460,7 @@ Or NotifyFilters.DirectoryName),
         Dim tempFilePath As String = Path.Combine(Path.GetTempPath(), "ListBoxItems.txt")
 
         ' 寫入所有項目到檔案
-        Using writer As New StreamWriter(tempFilePath, False, System.Text.Encoding.UTF8)
+        Using writer As New StreamWriter(tempFilePath, False, Encoding.UTF8)
             For Each item In PasswordBox.Items
                 writer.WriteLine(item.ToString())
             Next
@@ -4496,7 +4488,7 @@ Or NotifyFilters.DirectoryName),
         End If
     End Sub
 
-    Private Sub selectOperate()
+    Private Sub SelectOperate()
 
         ' 使用一個正則表達式來同時匹配單個數字和數字區間（可選的第二個數字）
         's15 s14~25
@@ -4518,7 +4510,7 @@ Or NotifyFilters.DirectoryName),
             End If
         End If
     End Sub
-    Private Sub expansionOperate()
+    Private Sub ExpansionOperate()
         'expandcount startnumber
         Dim pattern As New Regex("[eE](\d+)\s[Nn](\S+)")
         Dim match As Match = pattern.Match(orderComboBox.Text)
@@ -4561,12 +4553,6 @@ Or NotifyFilters.DirectoryName),
     Dim savingTrf As Boolean = False
     Public Sub SaveTrf(dirpath As String, filename As String, append As Boolean, extformat As String)
         If String.IsNullOrEmpty(dirpath) Or String.IsNullOrEmpty(filename) Then Return
-        If Form4.isEditngListbox Then Return
-        'If savingTrf = True Then
-        '    'MsgBox("isSavingTrf")
-        '    Return
-        'End If
-        'savingTrf = True
         Dim desk As String = dirpath
         'Dim ext_format As String = GroupBox4.Controls.OfType(Of RadioButton)().FirstOrDefault(Function(n) n.Checked).Text
         Dim record As String = desk & "\" & filename & extformat
@@ -4600,53 +4586,31 @@ Or NotifyFilters.DirectoryName),
         End Try
 
         If String.IsNullOrEmpty(SearchTextBox.Text) Then
-
-            'OpenFileDialog1.FileName = record
-            ' Console.WriteLine(Form1.ComboBox3.Text)
             If PathComboBox.Text <> record Then
                 '-----------導致速度變慢--------------
                 PathComboBox.Text = record
-                'Text = Path.GetFileName(record)
-                '------------------------------------
-                'additional_operate(record)
             End If
-
-        ElseIf Form3.Visible Then
-            MsgBox(record & "輸出完成")
-            CheckBox5.Checked = True
-            Remove_Button(New Object, New EventArgs)
-            SearchTextBox.Text = ""
-
-            Form3.Close()
-            Return
         End If
         If Form3.Visible Then
             MsgBox(record & "輸出完成")
-            Additional_operate(record)
             Form3.Close()
         End If
-        '-----------導致崩潰--------------
-        If Not CheckedListBox1_isCheck("Combine trf files") Then savingTrf = True
-
-        'Form1_Close(New Object, New CancelEventArgs)
-        savingTrf = False
     End Sub
-    Public Function pathRename()
+    Public Function PathRename()
         Dim filename As String
         Dim directoryName As String
-        Dim append As Boolean = False
         If Not File.Exists(PathComboBox.Text) Then Return False
         directoryName = Path.GetDirectoryName(PathComboBox.Text)
         'If OriginalNameRadioButton.Checked Then filename = Path.GetFileNameWithoutExtension(OpenFileDialog1.FileName)
         filename = Path.GetFileNameWithoutExtension(PathComboBox.Text)
         If Not String.IsNullOrEmpty(SearchTextBox.Text) Then
-            append = True
+
             directoryName = commonUsed
             filename = SearchTextBox.Text
             directoryName = Path.Combine(directoryName, "個別網站")
         End If
         If CheckedListBox1_isCheck("Combine trf files") Then
-            append = True
+
             directoryName = commonUsed
             filename = DateTime.Now.ToString("yyyy_MM_dd")
             filename += "網頁整合"
@@ -4663,7 +4627,7 @@ Or NotifyFilters.DirectoryName),
             'If sender.SelectedItems.count > 1 Then Return
             Dim lb As ListBox = DirectCast(sender, ListBox)
             '' 把螢幕座標轉換成控制項內的座標
-            Dim pt As System.Drawing.Point = lb.PointToClient(New System.Drawing.Point(e.X, e.Y))
+            Dim pt As Point = lb.PointToClient(New Point(e.X, e.Y))
             Dim fileList As String() = lb.SelectedItems.Cast(Of String).
     Select(Function(x) Remove_label(x)).ToArray()
             '' 判斷滑鼠是否在控制項範圍內
@@ -4739,13 +4703,13 @@ Or NotifyFilters.DirectoryName),
         '6:7
         If Not CheckedListBox1_isCheck("隱藏預覽") Then
             Dim proportion As Double = 11.0 / 26.0
-            Panel12.Size = New System.Drawing.Size(CInt(Size.Width * proportion), CInt(Panel12.Size.Height))
-            Panel9.Size = New System.Drawing.Size(CInt(Panel12.Size.Width), CInt(Panel9.Size.Height))
-            Panel5.Size = New System.Drawing.Size(CInt(Panel16.Size.Width), CInt(Panel5.Size.Height))
+            Panel12.Size = New Size(CInt(Size.Width * proportion), CInt(Panel12.Size.Height))
+            Panel9.Size = New Size(CInt(Panel12.Size.Width), CInt(Panel9.Size.Height))
+            Panel5.Size = New Size(CInt(Panel16.Size.Width), CInt(Panel5.Size.Height))
         Else
-            Panel12.Size = New System.Drawing.Size(CInt(Size.Width - Panel6.Size.Width - 20), CInt(Panel12.Size.Height))
-            Panel9.Size = New System.Drawing.Size(CInt(Panel12.Size.Width), CInt(Panel9.Size.Height))
-            Panel5.Size = New System.Drawing.Size(CInt(Panel16.Size.Width), CInt(Panel5.Size.Height))
+            Panel12.Size = New Size(CInt(Size.Width - Panel6.Size.Width - 20), CInt(Panel12.Size.Height))
+            Panel9.Size = New Size(CInt(Panel12.Size.Width), CInt(Panel9.Size.Height))
+            Panel5.Size = New Size(CInt(Panel16.Size.Width), CInt(Panel5.Size.Height))
         End If
     End Sub
     Private dragSourceControl As Control = Nothing
@@ -4753,23 +4717,49 @@ Or NotifyFilters.DirectoryName),
         Dim lb As ListBox = DirectCast(sender, ListBox) ' 接收拖曳的 ListBox
         ' 指定正確的目標
         targetList = lb
-        Form4.Form4_Load()
         ' 支援拖曳檔案
         If e.Data.GetDataPresent(DataFormats.FileDrop) Then
             Dim files() As String = CType(e.Data.GetData(DataFormats.FileDrop), String())
-            Form4.Setdata(files)
+            AddItem(files)
             ' 支援拖曳 URL
         ElseIf e.Data.GetDataPresent(DataFormats.Text) Then
             Dim url As String = CType(e.Data.GetData(DataFormats.Text), String)
 
-            Form4.Setdata(url)
+            AddItem(url)
             ' 只接受 http(s) 開頭的連結
             'If url.StartsWith("http://") OrElse url.StartsWith("https://") Then
 
             'End If
         End If
-        Form4.Button1_Click(sender, e)
+
     End Sub
+
+    Public Function Setdata_from_clipboard()
+        Dim items As New List(Of String)
+
+        If Clipboard.ContainsFileDropList Then
+            Dim files As Specialized.StringCollection = Clipboard.GetFileDropList
+            For Each clipfile As String In files
+                items.Add(clipfile)
+            Next
+
+        ElseIf Clipboard.GetText.Contains(vbCrLf) Then
+            Dim text As String = Clipboard.GetText
+            For Each line In text.Split({vbCrLf}, StringSplitOptions.None)
+                Dim trimmed As String = line.Trim()
+                If String.IsNullOrEmpty(trimmed) Then Continue For
+                items.Add(trimmed)
+            Next
+
+        Else
+            Dim trimmed As String = Clipboard.GetText.Trim
+            If Not String.IsNullOrEmpty(trimmed) Then
+                items.Add(trimmed)
+            End If
+        End If
+
+        Return items.ToArray()
+    End Function
 
     Private dragfrom = Nothing
 

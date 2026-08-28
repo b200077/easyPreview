@@ -168,16 +168,13 @@ Public Class Form2
         If Form1.PathComboBox.Text.Contains("個別網站") AndAlso Not stdLink.Contains(nowsort) Then
             Form3.AutoSort(stdLink, Form1.fileCollection)
         Else
-
-            Form4.form4_load()
-            Form4.setdata(stdLink)
-            Form4.Button1_Click(sender, e)
+            Form1.AddItem(stdLink)
         End If
     End Sub
-    Private Sub NavigateTarget(targetUrl As String, useWebView2 As Boolean)
+    Private Sub NavigateTarget(targetUrl As String, useBrowser As String)
         ' 使用 Invoke 確保在 UI 執行緒
-        If Me.InvokeRequired Then
-            Me.Invoke(Sub() NavigateTarget(targetUrl, useWebView2))
+        If InvokeRequired Then
+            Invoke(Sub() NavigateTarget(targetUrl, useBrowser))
             Return
         End If
 
@@ -196,8 +193,10 @@ Public Class Form2
         finalUrl = finalUrl.Replace(" ", "").Replace("(", "").Replace(")", "")
 
         ' 導向
-        If useWebView2 Then
+        If useBrowser = "webview2" Then
             WebView21.CoreWebView2.Navigate(finalUrl)
+        ElseIf useBrowser = "edge" Then
+            Process.Start("microsoft-edge:" & finalUrl)
         Else
             Process.Start(finalUrl)
         End If
@@ -220,131 +219,117 @@ Public Class Form2
         Dim menuList As IList(Of CoreWebView2ContextMenuItem) = e.MenuItems
 
 
-        Dim addlink As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("加入連結", Nothing, CoreWebView2ContextMenuItemKind.Command)
+        Dim addlink = CreateContextMenuItem("加入連結", Sub(s, ex)
+                                                        'e.Handled = True
+                                                        HandleAddLink(LinkUri, s, ex, False)
+                                                    End Sub)
 
-        AddHandler addlink.CustomItemSelected, Sub(s, ex)
-                                                   e.Handled = True
-                                                   HandleAddLink(LinkUri, s, ex, False)
-                                               End Sub
-        menuList.Insert(0, addlink)
-        Dim insertlink As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("加入下一項", Nothing, CoreWebView2ContextMenuItemKind.Command)
+        Dim insertlink = CreateContextMenuItem("加入下一項", Sub(s, ex)
+                                                            'e.Handled = True
+                                                            HandleAddLink(LinkUri, s, ex, True)
+                                                        End Sub)
 
-        AddHandler insertlink.CustomItemSelected, Sub(s, ex)
-                                                      e.Handled = True
-                                                      HandleAddLink(LinkUri, s, ex, True)
-                                                  End Sub
-        menuList.Insert(1, insertlink)
-        'Dim dlImg As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("下載圖片", Nothing, CoreWebView2ContextMenuItemKind.Command)
+        Dim openLink = CreateContextMenuItem("開啟連結", Sub(s, ex)
+                                                         'e.Handled = True
+                                                         NavigateTarget(target, "default")
+                                                     End Sub)
 
-        'AddHandler dlImg.CustomItemSelected, Sub(send, ex)
-        '                                         Me.Invoke(Sub()
-        '                                                       WebView21.CoreWebView2.Navigate(LinkUri)
-        '                                                       checkWebSite()
-        '                                                   End Sub)
-        '                                     End Sub
-        'menuList.Insert(2, dlImg)
-        Dim openLink As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("開啟連結", Nothing, CoreWebView2ContextMenuItemKind.Command)
-        AddHandler openLink.CustomItemSelected, Sub(s, ex)
-                                                    e.Handled = True
-                                                    NavigateTarget(target, False)
-                                                End Sub
-        menuList.Insert(2, openLink)
-        Dim goLink As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("前往", Nothing, CoreWebView2ContextMenuItemKind.Command)
-        AddHandler goLink.CustomItemSelected, Sub(s, ex)
-                                                  e.Handled = True
-                                                  NavigateTarget(target, True)
-                                              End Sub
-        menuList.Insert(3, goLink)
+
+        Dim goLink = CreateContextMenuItem("前往", Sub(s, ex)
+                                                     'e.Handled = True
+                                                     NavigateTarget(target, "webview2")
+                                                 End Sub)
+        Dim openLinkedge = CreateContextMenuItem("開啟連結(edge)", Sub(s, ex)
+                                                                   e.Handled = True
+                                                                   NavigateTarget(target, "edge")
+                                                               End Sub)
+
         Dim custom As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("自訂", Nothing, CoreWebView2ContextMenuItemKind.Submenu)
-        menuList.Insert(4, custom)
 
-        'Dim copyLink As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("複製連結", Nothing, CoreWebView2ContextMenuItemKind.Command)
-        'AddHandler copyLink.CustomItemSelected, Sub(send, ex)
-        '                                            target = target.Replace(" ", "").Replace("(", "").Replace(")", "")
-        '                                            Clipboard.SetText(target)
-        '                                            e.Handled = True
-        '                                        End Sub
-        'custom.Children.Add(copyLink)
 
-        Dim replaceLink As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("取代連結", Nothing, CoreWebView2ContextMenuItemKind.Command)
-        AddHandler replaceLink.CustomItemSelected, Sub(send, ex)
-                                                       'Dim menutarget As CoreWebView2ContextMenuTarget = e.ContextMenuTarget
-                                                       Me.Invoke(Sub()
-                                                                     If tarlist.SelectedIndex = -1 Then Return
-                                                                     tarlist.Items(tarlist.SelectedIndex) = target
-                                                                     Form1.refresh_backup()
-                                                                 End Sub)
-                                                   End Sub
+
+
+        Dim replaceLink = CreateContextMenuItem("取代連結", Sub(send, ex)
+                                                            Me.Invoke(Sub()
+                                                                          If tarlist.SelectedIndex = -1 Then Return
+                                                                          tarlist.Items(tarlist.SelectedIndex) = target
+                                                                          Form1.Refresh_backup()
+                                                                      End Sub)
+                                                        End Sub)
         custom.Children.Add(replaceLink)
+
         'Dim clearCache As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("清除快取", Nothing, CoreWebView2ContextMenuItemKind.Command)
         'AddHandler newItem.CustomItemSelected, Sub(send, ex)
         '                                           ClearBrowsingDataAsync()
         '                                       End Sub
         'custom.Children.Add(clearCache)
         Dim search As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("搜尋", Nothing, CoreWebView2ContextMenuItemKind.Submenu)
-        menuList.Insert(5, search)
-        Dim searchGoogle_word As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("搜尋文字google", Nothing, CoreWebView2ContextMenuItemKind.Command)
-        AddHandler searchGoogle_word.CustomItemSelected, Sub(send, ex)
-                                                             Console.WriteLine("selectionword:" & selectionword)
-                                                             If Not String.IsNullOrEmpty(selectionword) Then
-                                                                 ' 拼接 Bing 搜索的網址
-                                                                 Dim url As String = "https://www.google.com/search?q=" & selectionword
-                                                                 ' 使用 Process 類打開默認瀏覽器並訪問該網址
-                                                                 browser.CoreWebView2.Navigate(url)
-                                                             End If
-                                                         End Sub
+
+        Dim searchGoogle_word = CreateContextMenuItem("搜尋文字google", Sub(send, ex)
+                                                                        Console.WriteLine("selectionword:" & selectionword)
+                                                                        If Not String.IsNullOrEmpty(selectionword) Then
+                                                                            ' 拼接 Bing 搜索的網址
+                                                                            Dim url As String = "https://www.google.com/search?q=" & selectionword
+                                                                            ' 使用 Process 類打開默認瀏覽器並訪問該網址
+                                                                            browser.CoreWebView2.Navigate(url)
+                                                                        End If
+                                                                    End Sub)
         search.Children.Add(searchGoogle_word)
 
-        Dim searchLocal_word As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("搜尋文字本機", Nothing, CoreWebView2ContextMenuItemKind.Command)
-        AddHandler searchLocal_word.CustomItemSelected, Sub(send, ex)
-                                                            Console.WriteLine("selectionword:" & selectionword)
-                                                            If Not String.IsNullOrEmpty(selectionword) Then
-                                                                Me.Invoke(Sub()
-                                                                              Dim files As List(Of String) = SearchFiles(selectionword)
-                                                                              For Each file In files
-                                                                                  Form1.subFileCollection.Items.Add(file)
-                                                                              Next
-                                                                          End Sub)
+        Dim searchLocal_word = CreateContextMenuItem("搜尋文字本機", Sub(send, ex)
+                                                                   Console.WriteLine("selectionword:" & selectionword)
+                                                                   If Not String.IsNullOrEmpty(selectionword) Then
+                                                                       Me.Invoke(Sub()
+                                                                                     Dim files As List(Of String) = SearchFiles(selectionword)
+                                                                                     For Each file In files
+                                                                                         Form1.SubFileCollection.Items.Add(file)
+                                                                                     Next
+                                                                                 End Sub)
 
-                                                            End If
-                                                        End Sub
+                                                                   End If
+                                                               End Sub)
         search.Children.Add(searchLocal_word)
 
         ' 創建自定義項目
-        Dim searchAscii2d As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("搜尋圖片ascii2d", Nothing, CoreWebView2ContextMenuItemKind.Command)
-        ' 添加點擊事件
-        AddHandler searchAscii2d.CustomItemSelected, Sub(send, args)
-                                                         If e.ContextMenuTarget Is Nothing Then Exit Sub
-                                                         ' 取得選中的項目類型
-                                                         Dim targetKind As CoreWebView2ContextMenuTargetKind = e.ContextMenuTarget.Kind
+        Dim searchAscii2d = CreateContextMenuItem("搜尋圖片ascii2d", Sub(send, args)
+                                                                     If e.ContextMenuTarget Is Nothing Then Exit Sub
+                                                                     ' 取得選中的項目類型
+                                                                     Dim targetKind As CoreWebView2ContextMenuTargetKind = e.ContextMenuTarget.Kind
 
-                                                         ' 檢查是否點擊的是圖片
-                                                         If targetKind = CoreWebView2ContextMenuTargetKind.Image Then
-                                                             Dim imageUrl As String = e.ContextMenuTarget.SourceUri
-                                                             browser.CoreWebView2.Navigate($"https://ascii2d.net/search/url/{imageUrl}")
-                                                         End If
+                                                                     ' 檢查是否點擊的是圖片
+                                                                     If targetKind = CoreWebView2ContextMenuTargetKind.Image Then
+                                                                         Dim imageUrl As String = e.ContextMenuTarget.SourceUri
+                                                                         browser.CoreWebView2.Navigate($"https://ascii2d.net/search/url/{imageUrl}")
+                                                                     End If
 
-                                                     End Sub
+                                                                 End Sub)
         ' 將自定義項目添加到上下文選單
         search.Children.Add(searchAscii2d) ' 插入到選單的最上方
-        Dim searchGoogle_pic As CoreWebView2ContextMenuItem = browser.CoreWebView2.Environment.CreateContextMenuItem("搜尋圖片google", Nothing, CoreWebView2ContextMenuItemKind.Command)
-        ' 添加點擊事件
-        AddHandler searchGoogle_pic.CustomItemSelected, Sub(send, args)
-                                                            If e.ContextMenuTarget Is Nothing Then Exit Sub
-                                                            ' 取得選中的項目類型
-                                                            Dim targetKind As CoreWebView2ContextMenuTargetKind = e.ContextMenuTarget.Kind
+        Dim searchGoogle_pic = CreateContextMenuItem("搜尋圖片google", Sub(send, args)
+                                                                       If e.ContextMenuTarget Is Nothing Then Exit Sub
+                                                                       ' 取得選中的項目類型
+                                                                       Dim targetKind As CoreWebView2ContextMenuTargetKind = e.ContextMenuTarget.Kind
 
-                                                            ' 檢查是否點擊的是圖片
-                                                            If targetKind = CoreWebView2ContextMenuTargetKind.Image Then
-                                                                Dim imageUrl As String = e.ContextMenuTarget.SourceUri
-                                                                browser.CoreWebView2.Navigate($"https://lens.google.com/uploadbyurl?url={imageUrl}")
-                                                            End If
+                                                                       ' 檢查是否點擊的是圖片
+                                                                       If targetKind = CoreWebView2ContextMenuTargetKind.Image Then
+                                                                           Dim imageUrl As String = e.ContextMenuTarget.SourceUri
+                                                                           browser.CoreWebView2.Navigate($"https://lens.google.com/uploadbyurl?url={imageUrl}")
+                                                                       End If
 
-                                                        End Sub
+                                                                   End Sub)
         ' 將自定義項目添加到上下文選單
         search.Children.Add(searchGoogle_pic) ' 插入到選單的最上方
-        'deferral.Complete()
+        Dim items = {addlink, insertlink, openLink, goLink, openLinkedge, custom, search}
+        For i = 0 To items.Length - 1
+            menuList.Insert(i, items(i))
+        Next
+
     End Sub
+    Private Function CreateContextMenuItem(label As String, handler As EventHandler(Of Object)) As CoreWebView2ContextMenuItem
+        Dim item = WebView21.CoreWebView2.Environment.CreateContextMenuItem(label, Nothing, CoreWebView2ContextMenuItemKind.Command)
+        AddHandler item.CustomItemSelected, handler
+        Return item
+    End Function
 
     Private Async Sub Form2_shown() Handles MyBase.Shown
         Adjustment_Form()
@@ -1456,29 +1441,6 @@ Public Class Form2
         If e.KeyCode = Keys.F5 And WebView21.Visible Then
             WebView21.Reload()
         End If
-        If Not e.Control Then Return
-        Select Case e.KeyCode
-            Case Keys.D
-                checkWebSite()
-            Case Keys.R
-                Form1.Remove_Button(sender, New EventArgs)
-            Case Keys.Down
-                Form1.targetList.SelectedIndex = Form1.targetList.SelectedIndex + 1
-                Form1.targetList.SetSelected(Form1.targetList.SelectedIndex, False)
-            Case Keys.Up
-                Form1.targetList.SelectedIndex = Form1.targetList.SelectedIndex - 1
-                Form1.targetList.SetSelected(Form1.targetList.SelectedIndex + 1, False)
-            Case Keys.Enter
-                Form1.OnButton4Click(sender, New EventArgs)
-            Case Keys.Z
-                Form1.listUndo()
-            Case Keys.C
-                Clipboard_SetIImage()
-            Case Keys.V
-                Form4.form4_load()
-                Form4.setdata_from_clipboard()
-                Form4.Button1_Click(sender, e)
-        End Select
     End Sub
     Private Sub CheckBox1_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBox1.Click
         TopMost = CheckBox1.Checked
